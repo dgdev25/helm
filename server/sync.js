@@ -1,6 +1,7 @@
 // server/sync.js
 import cron from 'node-cron'
 import { syncGitHub } from './github.js'
+import { scanLocalDirs } from './localscanner.js'
 import 'dotenv/config'
 
 export function startScheduler() {
@@ -14,6 +15,12 @@ export function startScheduler() {
       console.log(`[sync] Done — ${count} projects updated`)
     } catch (err) {
       console.error('[sync] GitHub sync failed:', err.message)
+    }
+    try {
+      const localCount = await scanLocalDirs()
+      console.log(`[sync] Local scan — ${localCount} repos found`)
+    } catch (err) {
+      console.error('[sync] Local scan failed:', err.message)
     }
   })
 

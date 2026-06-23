@@ -100,7 +100,31 @@ export default function ProjectDetail() {
   }
 
   if (loading) return (
-    <div style={{ padding: 40, color: 'var(--text-muted)' }}>Loading…</div>
+    <div style={{ padding: '0 0 60px' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px' }}>
+        <div className="skeleton" style={{ height: 14, width: 200 }} />
+      </div>
+      <div style={{ padding: '32px 28px 0', marginBottom: 28 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <div className="skeleton" style={{ width: 52, height: 52, borderRadius: 14 }} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="skeleton" style={{ height: 22, width: '40%' }} />
+            <div className="skeleton" style={{ height: 14, width: '70%' }} />
+            <div className="skeleton" style={{ height: 12, width: '30%' }} />
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, padding: '0 28px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="glass skeleton" style={{ height: 200 }} />
+          <div className="glass skeleton" style={{ height: 120 }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="glass skeleton" style={{ height: 90 }} />
+          <div className="glass skeleton" style={{ height: 120 }} />
+        </div>
+      </div>
+    </div>
   )
   if (error || !project) return (
     <div style={{ padding: 40, color: 'var(--danger)' }}>{error || 'Project not found'}</div>

@@ -70,8 +70,10 @@ export default function ProjectCard({ project, skeleton }) {
         {language && <span style={{ color: '#93c5fd' }}>{language}</span>}
         {stars > 0 && <span>★ {stars}</span>}
         {open_issues > 0 && <span style={{ color: '#fb923c' }}>{open_issues} issues</span>}
-        {open_prs > 0 && <span style={{ color: '#a78bfa' }}>{open_prs} PRs</span>}
         {!github_url && local_path && <span style={{ color: 'var(--text-dim)', fontSize: '0.68rem' }}>local only</span>}
+        {!language && !stars && !open_issues && !local_path && !github_url && (
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.68rem' }}>No metadata</span>
+        )}
       </div>
 
       {/* Commit footer */}

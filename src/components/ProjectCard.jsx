@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from '../utils/time.js'
+import { safeHref } from '../utils/safeHref.js'
 import StatusPill from './StatusPill.jsx'
 import TopicChip from './TopicChip.jsx'
 
@@ -89,7 +90,7 @@ export default function ProjectCard({ project, skeleton }) {
       {/* GitHub link */}
       {github_url && (
         <a
-          href={github_url}
+          href={safeHref(github_url)}
           target="_blank" rel="noreferrer"
           onClick={e => e.stopPropagation()}
           style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textDecoration: 'none', marginTop: 'auto' }}

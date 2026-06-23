@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, BarController } from 'chart.js'
 import { useStore } from '../store.js'
 import { formatDistanceToNow } from '../utils/time.js'
+import { safeHref } from '../utils/safeHref.js'
 import StatusPill from '../components/StatusPill.jsx'
 import TopicChip from '../components/TopicChip.jsx'
 import CommitList from '../components/CommitList.jsx'
@@ -216,11 +217,11 @@ export default function ProjectDetail() {
           {p.github_url && (
             <div className="glass" style={{ padding: 18 }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 12 }}>Links</div>
-              <a href={p.github_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', display: 'block', marginBottom: 6 }}>
+              <a href={safeHref(p.github_url)} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', display: 'block', marginBottom: 6 }}>
                 GitHub repository ↗
               </a>
               {p.homepage && (
-                <a href={p.homepage} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', display: 'block' }}>
+                <a href={safeHref(p.homepage)} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem', color: 'var(--primary)', textDecoration: 'none', display: 'block' }}>
                   Homepage ↗
                 </a>
               )}

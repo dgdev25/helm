@@ -45,11 +45,21 @@ export async function scanLocalDirs() {
   const dirs = (process.env.LOCAL_SCAN_DIRS || '').split(',').map(d => d.trim()).filter(Boolean)
   let count = 0
 
+  // Preload existing slug→local_path map to detect collisions
+  const existing = await sql`SELECT slug, local_path FROM projects WHERE local_path IS NOT NULL`
+  const slugToPath = Object.fromEntries(existing.map(p => [p.slug, p.local_path]))
+
   for (const baseDir of dirs) {
     const repos = getRepoDirs(baseDir)
     for (const repoPath of repos) {
       const name = getRepoName(repoPath)
-      const slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+      let slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+      // Disambiguate slug collision with a different repo
+      if (slugToPath[slug] && slugToPath[slug] !== repoPath) {
+        const parent = repoPath.split('/').slice(-2, -1)[0] || ''
+        slug = `${slug}-${parent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`.replace(/-+/g, '-').replace(/-$/, '')
+      }
+      slugToPath[slug] = repoPath
       const commit = getLastCommit(repoPath)
 
       await sql`
@@ -59,10 +69,10 @@ export async function scanLocalDirs() {
           local_path = EXCLUDED.local_path,
           last_commit_at = COALESCE(GREATEST(projects.last_commit_at, EXCLUDED.last_commit_at), projects.last_commit_at),
           last_commit_msg = CASE
-            WHEN EXCLUDED.last_commit_at IS NOT NULL AND EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_msg
+            WHEN EXCLUDED.last_commit_at IS NOT NULL AND (projects.last_commit_at IS NULL OR EXCLUDED.last_commit_at > projects.last_commit_at) THEN EXCLUDED.last_commit_msg
             ELSE projects.last_commit_msg END,
           last_commit_author = CASE
-            WHEN EXCLUDED.last_commit_at IS NOT NULL AND EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_author
+            WHEN EXCLUDED.last_commit_at IS NOT NULL AND (projects.last_commit_at IS NULL OR EXCLUDED.last_commit_at > projects.last_commit_at) THEN EXCLUDED.last_commit_author
             ELSE projects.last_commit_author END,
           updated_at = now()
       `

@@ -1,5 +1,5 @@
 // server/localscanner.js
-import { execSync } from 'child_process'
+import { spawnSync } from 'child_process'
 import { readdirSync, existsSync } from 'fs'
 import { join } from 'path'
 import sql from './db.js'
@@ -20,21 +20,20 @@ function getRepoDirs(baseDir) {
       .filter(d => d.isDirectory())
       .map(d => join(baseDir, d.name))
       .filter(isGitRepo)
-  } catch (_) {
+  } catch (err) {
+    console.warn(`[scan] Cannot read directory ${baseDir}: ${err.message}`)
     return []
   }
 }
 
 function getLastCommit(repoPath) {
-  try {
-    const raw = execSync(
-      `git -C "${repoPath}" log -1 --format="%h\x1f%s\x1f%an\x1f%aI"`,
-      { encoding: 'utf8', timeout: 5000 }
-    ).trim()
-    return parseGitLog(raw)
-  } catch (_) {
-    return null
-  }
+  const result = spawnSync(
+    'git',
+    ['-C', repoPath, 'log', '-1', '--format=%h\x1f%s\x1f%an\x1f%aI'],
+    { encoding: 'utf8', timeout: 5000 }
+  )
+  if (result.status !== 0 || !result.stdout.trim()) return null
+  return parseGitLog(result.stdout.trim())
 }
 
 function getRepoName(repoPath) {

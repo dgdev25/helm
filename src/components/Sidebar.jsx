@@ -97,7 +97,7 @@ export default function Sidebar() {
           disabled={loading}
           style={{
             background: 'var(--gradient-btn)', border: '1px solid rgba(34,153,113,0.2)',
-            color: 'var(--primary)', padding: '9px 14px', borderRadius: 9, fontSize: '0.8rem',
+            color: '#fff', padding: '9px 14px', borderRadius: 9, fontSize: '0.8rem',
             fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: "'Space Grotesk',sans-serif",
             transition: 'var(--fast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             opacity: loading ? 0.6 : 1,

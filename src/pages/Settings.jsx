@@ -37,7 +37,7 @@ function SaveButton({ onClick, saving, saved }) {
   return (
     <button
       onClick={onClick} disabled={saving}
-      style={{ background: 'var(--gradient-btn)', border: '1px solid rgba(34,153,113,0.2)', color: 'var(--primary)', padding: '8px 22px', borderRadius: 9, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif", transition: 'var(--fast)', width: 'fit-content' }}
+      style={{ background: 'var(--gradient-btn)', border: '1px solid rgba(34,153,113,0.2)', color: '#fff', padding: '8px 22px', borderRadius: 9, fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif", transition: 'var(--fast)', width: 'fit-content' }}
     >
       {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save'}
     </button>

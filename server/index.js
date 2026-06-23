@@ -10,7 +10,7 @@ const isDev = process.env.NODE_ENV !== 'production'
 
 const app = Fastify({ logger: true })
 
-await app.register(cors, { origin: isDev ? 'http://localhost:5173' : false })
+await app.register(cors, { origin: isDev ? 'http://localhost:7338' : false })
 
 if (!isDev) {
   await app.register(staticPlugin, {
@@ -19,6 +19,6 @@ if (!isDev) {
   })
 }
 
-app.get('/api/health', async () => ({ ok: true }))
+app.get('/api/health', async () => ({ data: { ok: true } }))
 
-await app.listen({ port: Number(process.env.PORT) || 3000 })
+await app.listen({ port: Number(process.env.PORT) || 7337 })

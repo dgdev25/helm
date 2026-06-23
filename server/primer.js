@@ -1,39 +1,18 @@
 import { spawn } from 'child_process'
-import { readFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { readFile } from 'fs/promises'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-const PROMPT = `You are priming this project. Execute the following steps using your tools:
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const SKILL_PATH = join(__dirname, 'primers-skill.md')
 
-1. Run: git log --oneline -15
-2. Run: git status -s
-3. Read README.md if it exists
-4. Read package.json if it exists (skip lockfiles)
-5. Create the .primer/ directory if needed, then write .primer/STATE.md with this structure:
+let _skill = null
+async function getSkill() {
+  if (!_skill) _skill = await readFile(SKILL_PATH, 'utf8')
+  return _skill
+}
 
-# <Project Name> — Primer State
-
-## At a glance
-- **Purpose:** <one sentence>
-- **Stack:** <lang + framework + storage>
-- **Dev loop:** <how to build/run>
-- **Last primed:** <today's date> · HEAD \`<sha>\` on \`<branch>\`
-
-## Structure
-<key folders + one-line roles>
-
-## In flight
-<branch, uncommitted work, what recent commits suggest>
-
-## Roadmap — next steps
-1. <step> — *why now*
-2. ...
-
-## Session log
-- <today> — initial primer
-
-6. Output the full contents of .primer/STATE.md`
-
-function runClaude(cwd) {
+function runClaude(cwd, prompt) {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       'claude',
@@ -43,7 +22,7 @@ function runClaude(cwd) {
     let stdout = '', stderr = ''
     proc.stdout.on('data', d => { stdout += d })
     proc.stderr.on('data', d => { stderr += d })
-    proc.stdin.write(PROMPT)
+    proc.stdin.write(prompt)
     proc.stdin.end()
     const timer = setTimeout(() => { proc.kill(); reject(new Error('Primer timed out after 2 minutes')) }, 120000)
     proc.on('close', code => {
@@ -55,7 +34,8 @@ function runClaude(cwd) {
 }
 
 export async function runPrimer(localPath) {
-  const output = await runClaude(localPath)
+  const skill = await getSkill()
+  const output = await runClaude(localPath, skill)
 
   // Read STATE.md if claude wrote it
   let state = null

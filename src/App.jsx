@@ -1,5 +1,15 @@
+// src/App.jsx
+import { useEffect } from 'react'
+import Layout from './components/Layout.jsx'
+import { useStore } from './store.js'
+
 export default function App() {
-  return <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-    <h1 className="text-2xl font-bold text-teal-400">Deathstar</h1>
-  </div>
+  const { fetchProjects } = useStore()
+  useEffect(() => { fetchProjects() }, [])
+
+  return (
+    <Layout>
+      <div className="p-8 text-gray-400">Loading projects…</div>
+    </Layout>
+  )
 }

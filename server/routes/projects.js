@@ -54,6 +54,16 @@ export default async function projectRoutes(app) {
     }
   })
 
+  app.delete('/api/projects/:slug', async (req, reply) => {
+    try {
+      const [project] = await sql`DELETE FROM projects WHERE slug = ${req.params.slug} RETURNING slug`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+      return { data: { deleted: project.slug } }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
   app.post('/api/projects/:slug/sync', async (req, reply) => {
     try {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`

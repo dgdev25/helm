@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance — Deathstar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:#229971; --primary-dark:#00665e; --primary-glow:rgba(34,153,113,0.15);
+      --gradient:linear-gradient(135deg,#229971,#cedc00);
+      --bg:#030712; --surface:rgba(255,255,255,0.04); --surface-border:rgba(255,255,255,0.07);
+      --text:#f1f5f9; --text-muted:#64748b;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+    h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
+    .brand{font-family:'Space Grotesk',sans-serif;font-size:0.9rem;font-weight:700;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:40px;animation:fadeInUp 0.4s ease both;}
+    .icon-wrap{width:72px;height:72px;border-radius:18px;background:var(--primary-glow);border:1px solid rgba(34,153,113,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;animation:fadeInUp 0.4s ease 0.05s both;}
+    .title{font-size:1.5rem;font-weight:700;margin-bottom:10px;animation:fadeInUp 0.4s ease 0.1s both;}
+    .desc{font-size:0.9rem;color:var(--text-muted);max-width:400px;line-height:1.65;animation:fadeInUp 0.4s ease 0.15s both;}
+    .eta-box{margin:28px auto 0;background:var(--surface);border:1px solid var(--surface-border);border-radius:12px;padding:16px 28px;display:inline-block;animation:fadeInUp 0.4s ease 0.2s both;}
+    .eta-label{font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;}
+    .eta-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--primary);font-weight:600;}
+    .countdown{display:flex;gap:20px;justify-content:center;margin-top:28px;animation:fadeInUp 0.4s ease 0.25s both;}
+    .countdown-unit{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .countdown-num{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;color:var(--text);line-height:1;}
+    .countdown-label{font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;}
+    .sep{font-family:'JetBrains Mono',monospace;font-size:2rem;color:var(--text-muted);align-self:flex-start;margin-top:4px;}
+    .actions{margin-top:32px;animation:fadeInUp 0.4s ease 0.3s both;}
+    .btn-status{background:var(--surface);border:1px solid var(--surface-border);color:var(--text-muted);padding:9px 22px;border-radius:10px;font-size:0.82rem;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-decoration:none;display:inline-block;transition:200ms;}
+    .btn-status:hover{color:var(--text);}
+    .grid-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(34,153,113,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(34,153,113,0.02) 1px,transparent 1px);background-size:48px 48px;}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    .pulse{animation:pulse 2s ease infinite;}
+    [data-theme="light"]{--bg:#f1f5f9;--surface:rgba(0,0,0,0.03);--surface-border:rgba(0,0,0,0.08);--text:#0f172a;--text-muted:#64748b;}
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="brand">Deathstar</div>
+  <div class="icon-wrap">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#229971" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+  </div>
+  <h1 class="title">Scheduled Maintenance</h1>
+  <p class="desc">Deathstar is temporarily offline for scheduled maintenance. We're performing database migrations and infrastructure upgrades.</p>
+  <div class="eta-box">
+    <div class="eta-label">Estimated return</div>
+    <div class="eta-val pulse">23 Jun 2026 · 14:00 UTC</div>
+  </div>
+  <div class="countdown">
+    <div class="countdown-unit">
+      <div class="countdown-num" id="cd-h">01</div>
+      <div class="countdown-label">Hours</div>
+    </div>
+    <div class="sep">:</div>
+    <div class="countdown-unit">
+      <div class="countdown-num" id="cd-m">24</div>
+      <div class="countdown-label">Minutes</div>
+    </div>
+    <div class="sep">:</div>
+    <div class="countdown-unit">
+      <div class="countdown-num" id="cd-s">38</div>
+      <div class="countdown-label">Seconds</div>
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn-status" href="#">View status page</a>
+  </div>
+
+  <script>
+    let total = 1 * 3600 + 24 * 60 + 38;
+    function tick() {
+      if (total <= 0) return;
+      total--;
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+      document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+      document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+    }
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>

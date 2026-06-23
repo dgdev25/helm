@@ -1,3 +1,115 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Deathstar Design Tokens (Aston Martin palette) ── */
+:root {
+  --primary:        #229971;
+  --primary-dark:   #00665e;
+  --primary-deep:   #004d3f;
+  --primary-glow:   rgba(34,153,113,0.15);
+  --primary-subtle: rgba(34,153,113,0.08);
+  --accent:         #cedc00;
+  --gradient:       linear-gradient(135deg,#229971,#cedc00);
+  --gradient-rev:   linear-gradient(135deg,#cedc00,#229971);
+  --gradient-btn:   linear-gradient(135deg,#00665e,#004d3f);
+  --gradient-surf:  linear-gradient(180deg,rgba(34,153,113,0.08),transparent);
+
+  --bg:             #030712;
+  --bg-2:           #0f1117;
+  --surface:        rgba(255,255,255,0.04);
+  --surface-hover:  rgba(255,255,255,0.07);
+  --surface-border: rgba(255,255,255,0.07);
+
+  --text:           #f1f5f9;
+  --text-muted:     #64748b;
+  --text-dim:       #334155;
+
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
+  --shadow:     0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg:  0 20px 60px rgba(0,0,0,0.7);
+  --shadow-glow: 0 8px 32px rgba(34,153,113,0.15);
+
+  --radius-sm:  6px;
+  --radius:     10px;
+  --radius-md:  12px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+
+  --fast:   200ms ease;
+  --normal: 300ms ease;
+
+  --status-active-bg:     rgba(16,185,129,0.12);
+  --status-active-text:   #34d399;
+  --status-active-border: rgba(16,185,129,0.25);
+  --status-paused-bg:     rgba(234,179,8,0.12);
+  --status-paused-text:   #fbbf24;
+  --status-paused-border: rgba(234,179,8,0.25);
+  --status-archived-bg:   rgba(100,116,139,0.12);
+  --status-archived-text: #64748b;
+  --status-archived-border: rgba(100,116,139,0.2);
+
+  --chip-bg:     rgba(34,153,113,0.08);
+  --chip-text:   #6ee7b7;
+  --chip-border: rgba(34,153,113,0.15);
+
+  --danger:        #f87171;
+  --danger-bg:     rgba(239,68,68,0.1);
+  --danger-border: rgba(239,68,68,0.2);
+}
+
+[data-theme="light"] {
+  --bg:             #f1f5f9;
+  --bg-2:           #ffffff;
+  --surface:        rgba(0,0,0,0.03);
+  --surface-hover:  rgba(0,0,0,0.06);
+  --surface-border: rgba(0,0,0,0.08);
+  --text:           #0f172a;
+  --text-muted:     #64748b;
+  --text-dim:       #cbd5e1;
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.06);
+  --shadow:     0 8px 32px rgba(0,0,0,0.08);
+  --shadow-lg:  0 20px 60px rgba(0,0,0,0.12);
+  --primary-glow: rgba(34,153,113,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background var(--normal), color var(--normal);
+}
+h1,h2,h3,h4,h5 { font-family: 'Space Grotesk', sans-serif; }
+
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeInUp 0.4s ease both; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,var(--surface),var(--surface-hover),var(--surface));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: 3px; }

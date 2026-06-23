@@ -1,0 +1,142 @@
+/* Deathstar Design Tokens
+ * Bridge artifact for implementation — import in globals.css or index.css
+ * All values extracted from the established mockup design system.
+ */
+
+:root {
+  /* ── Primary brand ── */
+  --ds-primary:        #229971;
+  --ds-primary-dark:   #00665e;
+  --ds-primary-deep:   #004d3f;
+  --ds-primary-glow:   rgba(34, 153, 113, 0.15);
+  --ds-primary-subtle: rgba(34, 153, 113, 0.08);
+
+  /* ── Accent ── */
+  --ds-accent:         #cedc00;
+
+  /* ── Gradient ── */
+  --ds-gradient:       linear-gradient(135deg, #229971, #cedc00);
+  --ds-gradient-rev:   linear-gradient(135deg, #cedc00, #229971);
+  --ds-gradient-surf:  linear-gradient(180deg, rgba(34, 153, 113, 0.08), transparent);
+
+  /* ── Backgrounds (dark) ── */
+  --ds-bg:             #030712;
+  --ds-bg-2:           #0f1117;
+
+  /* ── Glass surfaces (dark) ── */
+  --ds-surface:        rgba(255, 255, 255, 0.04);
+  --ds-surface-hover:  rgba(255, 255, 255, 0.07);
+  --ds-surface-border: rgba(255, 255, 255, 0.07);
+
+  /* ── Text (dark) ── */
+  --ds-text:           #f1f5f9;
+  --ds-text-muted:     #64748b;
+  --ds-text-dim:       #334155;
+
+  /* ── Shadows ── */
+  --ds-shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.3);
+  --ds-shadow:         0 8px 32px rgba(0, 0, 0, 0.5);
+  --ds-shadow-lg:      0 20px 60px rgba(0, 0, 0, 0.7);
+  --ds-shadow-glass:   0 8px 32px rgba(34, 153, 113, 0.15);
+
+  /* ── Border radius ── */
+  --ds-radius-sm:      6px;
+  --ds-radius:         10px;
+  --ds-radius-md:      12px;
+  --ds-radius-lg:      14px;
+  --ds-radius-xl:      18px;
+  --ds-radius-pill:    9999px;
+
+  /* ── Transitions ── */
+  --ds-fast:           200ms ease;
+  --ds-normal:         300ms ease;
+  --ds-slow:           500ms ease;
+
+  /* ── Status: active ── */
+  --ds-status-active-bg:     rgba(16, 185, 129, 0.12);
+  --ds-status-active-text:   #34d399;
+  --ds-status-active-border: rgba(16, 185, 129, 0.25);
+
+  /* ── Status: paused ── */
+  --ds-status-paused-bg:     rgba(234, 179, 8, 0.12);
+  --ds-status-paused-text:   #fbbf24;
+  --ds-status-paused-border: rgba(234, 179, 8, 0.25);
+
+  /* ── Status: archived ── */
+  --ds-status-archived-bg:     rgba(100, 116, 139, 0.12);
+  --ds-status-archived-text:   #64748b;
+  --ds-status-archived-border: rgba(100, 116, 139, 0.2);
+
+  /* ── Semantic ── */
+  --ds-issues:   #fb923c;
+  --ds-prs:      #a78bfa;
+  --ds-lang:     #93c5fd;
+  --ds-danger:   #f87171;
+  --ds-danger-bg: rgba(239, 68, 68, 0.1);
+  --ds-danger-border: rgba(239, 68, 68, 0.2);
+
+  /* ── Topic chips ── */
+  --ds-chip-bg:     rgba(34, 153, 113, 0.08);
+  --ds-chip-text:   #6ee7b7;
+  --ds-chip-border: rgba(34, 153, 113, 0.15);
+
+  /* ── Typography ── */
+  --ds-font-heading: 'Space Grotesk', sans-serif;
+  --ds-font-body:    'Inter', sans-serif;
+  --ds-font-mono:    'JetBrains Mono', monospace;
+}
+
+/* ── Light mode overrides ── */
+[data-theme="light"],
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ds-bg:             #f1f5f9;
+    --ds-bg-2:           #ffffff;
+    --ds-surface:        rgba(0, 0, 0, 0.03);
+    --ds-surface-hover:  rgba(0, 0, 0, 0.06);
+    --ds-surface-border: rgba(0, 0, 0, 0.08);
+    --ds-text:           #0f172a;
+    --ds-text-muted:     #64748b;
+    --ds-text-dim:       #cbd5e1;
+    --ds-shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.06);
+    --ds-shadow:         0 8px 32px rgba(0, 0, 0, 0.08);
+    --ds-shadow-lg:      0 20px 60px rgba(0, 0, 0, 0.12);
+    --ds-primary-glow:   rgba(0, 102, 94, 0.1);
+  }
+}
+
+/* ── Utility: glass card ── */
+.ds-glass {
+  background: var(--ds-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--ds-surface-border);
+  box-shadow: var(--ds-shadow-sm);
+  border-radius: var(--ds-radius-lg);
+}
+
+/* ── Utility: entrance animation ── */
+@keyframes ds-fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ds-animate {
+  animation: ds-fade-in-up 0.4s ease both;
+}
+
+/* ── Utility: shimmer skeleton ── */
+@keyframes ds-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ds-surface),
+    var(--ds-surface-hover),
+    var(--ds-surface)
+  );
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.4s infinite;
+  border-radius: var(--ds-radius-sm);
+}

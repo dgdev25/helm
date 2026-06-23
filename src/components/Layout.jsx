@@ -1,11 +1,12 @@
-// src/components/Layout.jsx
 import Sidebar from './Sidebar.jsx'
 
 export default function Layout({ children }) {
   return (
-    <div className="flex min-h-screen bg-gray-950 text-gray-100">
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <main style={{ flex: 1, overflowAuto: 'auto', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+        {children}
+      </main>
     </div>
   )
 }

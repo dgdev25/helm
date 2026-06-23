@@ -1,41 +1,95 @@
-// src/pages/Dashboard.jsx
 import { useStore } from '../store.js'
 import ProjectCard from '../components/ProjectCard.jsx'
-import SearchBar from '../components/SearchBar.jsx'
+import StatCard from '../components/StatCard.jsx'
+
+const STATUS_CHIPS = [
+  { label: 'All', value: '' },
+  { label: 'Active', value: 'active' },
+  { label: 'Paused', value: 'paused' },
+  { label: 'Archived', value: 'archived' },
+]
 
 export default function Dashboard() {
-  const { projects, loading, error } = useStore()
+  const { projects, loading, error, filters, setFilter } = useStore()
 
-  const languages = [...new Set(projects.map(p => p.language).filter(Boolean))].sort()
+  const active   = projects.filter(p => p.status === 'active').length
+  const paused   = projects.filter(p => p.status === 'paused').length
+  const issues   = projects.reduce((s, p) => s + (p.open_issues || 0), 0)
+  const langs    = [...new Set(projects.map(p => p.language).filter(Boolean))]
+
+  const chipStyle = (selected) => ({
+    padding: '5px 14px', borderRadius: 9999, fontSize: '0.78rem', cursor: 'pointer',
+    border: `1px solid ${selected ? 'var(--primary)' : 'var(--surface-border)'}`,
+    background: selected ? 'var(--primary-glow)' : 'var(--surface)',
+    color: selected ? 'var(--primary)' : 'var(--text-muted)',
+    fontWeight: selected ? 500 : 400, transition: 'var(--fast)',
+  })
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-100 mb-1">Projects</h2>
-        <p className="text-sm text-gray-500">{projects.length} total</p>
+    <div style={{ padding: '24px 28px 40px', maxWidth: 1400 }}>
+      {/* Topbar */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(16px)', margin: '-24px -28px 28px', padding: '12px 28px', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Projects</span>
+        </div>
+        {/* Language filter */}
+        {langs.length > 0 && (
+          <select
+            value={filters.language}
+            onChange={e => setFilter('language', e.target.value)}
+            style={{ background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', color: 'var(--text)', outline: 'none' }}
+          >
+            <option value="">All languages</option>
+            {langs.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+        )}
+        {/* Search */}
+        <input
+          type="search"
+          placeholder="Search…"
+          value={filters.search}
+          onChange={e => setFilter('search', e.target.value)}
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8,
+            padding: '5px 12px', fontSize: '0.78rem', color: 'var(--text)', outline: 'none', width: 200,
+          }}
+        />
       </div>
 
-      <div className="mb-6">
-        <SearchBar languages={languages} />
+      {/* Stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 24 }}>
+        <StatCard label="Total Projects" value={projects.length} sub={`${active} active, ${paused} paused`} />
+        <StatCard label="Active" value={active} sub="currently in progress" accent="var(--status-active-text)" />
+        <StatCard label="Open Issues" value={issues} sub="across all repos" accent="#fb923c" />
+        <StatCard label="Languages" value={langs.length} sub="unique tech stack" accent="var(--accent)" />
+      </div>
+
+      {/* Filter chips */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        {STATUS_CHIPS.map(({ label, value }) => (
+          <button key={value} style={chipStyle(filters.status === value)} onClick={() => setFilter('status', value)}>
+            {label}
+          </button>
+        ))}
       </div>
 
       {error && (
-        <div className="mb-4 px-4 py-3 bg-red-900/30 border border-red-800 rounded text-sm text-red-400">
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', borderRadius: 10, fontSize: '0.82rem', color: 'var(--danger)' }}>
           {error}
         </div>
       )}
 
-      {loading && !projects.length ? (
-        <div className="text-gray-600 text-sm">Loading&hellip;</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {projects.map(p => <ProjectCard key={p.slug || p.name} project={p} />)}
-        </div>
-      )}
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
+        {loading && !projects.length
+          ? Array.from({ length: 8 }).map((_, i) => <ProjectCard key={i} skeleton />)
+          : projects.map(p => <ProjectCard key={p.slug || p.name} project={p} />)
+        }
+      </div>
 
       {!loading && !projects.length && (
-        <div className="text-gray-600 text-sm text-center py-16">
-          No projects found. Click &ldquo;Sync Now&rdquo; to import from GitHub and local dirs.
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+          No projects found. Click "Sync Now" to import from GitHub and local dirs.
         </div>
       )}
     </div>

@@ -1,76 +1,104 @@
-// src/components/ProjectCard.jsx
+import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from '../utils/time.js'
+import StatusPill from './StatusPill.jsx'
+import TopicChip from './TopicChip.jsx'
 
-const STATUS_COLORS = {
-  active: 'bg-emerald-900/50 text-emerald-300',
-  paused: 'bg-yellow-900/50 text-yellow-300',
-  archived: 'bg-gray-800 text-gray-500',
-}
+export default function ProjectCard({ project, skeleton }) {
+  const navigate = useNavigate()
 
-export default function ProjectCard({ project }) {
+  if (skeleton) {
+    return (
+      <div className="glass" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="skeleton" style={{ height: 16, width: '60%' }} />
+        <div className="skeleton" style={{ height: 12, width: '90%' }} />
+        <div className="skeleton" style={{ height: 12, width: '40%' }} />
+        <div className="skeleton" style={{ height: 24, width: '100%', marginTop: 8 }} />
+      </div>
+    )
+  }
+
   const {
-    name, description, language, topics = [], stars,
-    open_issues, open_prs, last_commit_at, last_commit_msg,
-    last_commit_author, status, github_url, is_private
+    slug, name, description, language, topics = [], stars = 0,
+    open_issues = 0, open_prs = 0, last_commit_at, last_commit_msg,
+    last_commit_author, status, github_url, is_private, local_path,
   } = project
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-700 transition-colors flex flex-col gap-3">
+    <div
+      className="glass animate-in"
+      onClick={() => navigate(`/projects/${slug}`)}
+      style={{
+        padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+        cursor: 'pointer', opacity: status === 'archived' ? 0.6 : 1,
+        transition: 'var(--fast)',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,153,113,0.3)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--surface-border)'}
+    >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-100 truncate">{name}</h2>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {name}
+            </h2>
             {is_private && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 shrink-0">private</span>
+              <span style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 9999, background: 'var(--surface)', border: '1px solid var(--surface-border)', color: 'var(--text-muted)', flexShrink: 0 }}>
+                private
+              </span>
             )}
           </div>
           {description && (
-            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{description}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {description}
+            </p>
           )}
         </div>
-        <span className={`text-xs px-2 py-0.5 rounded shrink-0 ${STATUS_COLORS[status] || STATUS_COLORS.active}`}>
-          {status}
-        </span>
+        <StatusPill status={status || 'active'} />
       </div>
 
       {/* Topics */}
       {topics.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {topics.slice(0, 5).map(t => (
-            <span key={t} className="text-xs px-2 py-0.5 rounded-full bg-teal-900/40 text-teal-400">{t}</span>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {topics.slice(0, 5).map(t => <TopicChip key={t} label={t} />)}
         </div>
       )}
 
-      {/* Stats row */}
-      <div className="flex items-center gap-4 text-xs text-gray-500">
-        {language && <span className="text-blue-400">{language}</span>}
-        {stars > 0 && <span>&#9733; {stars}</span>}
-        {open_issues > 0 && <span className="text-orange-400">{open_issues} issues</span>}
-        {open_prs > 0 && <span className="text-purple-400">{open_prs} PRs</span>}
+      {/* Stats */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        {language && <span style={{ color: '#93c5fd' }}>{language}</span>}
+        {stars > 0 && <span>★ {stars}</span>}
+        {open_issues > 0 && <span style={{ color: '#fb923c' }}>{open_issues} issues</span>}
+        {open_prs > 0 && <span style={{ color: '#a78bfa' }}>{open_prs} PRs</span>}
+        {!github_url && local_path && <span style={{ color: 'var(--text-dim)', fontSize: '0.68rem' }}>local only</span>}
       </div>
 
-      {/* Last commit */}
+      {/* Commit footer */}
       {last_commit_at && (
-        <div className="border-t border-gray-800 pt-3 text-xs text-gray-600">
-          <span className="text-gray-400">{formatDistanceToNow(last_commit_at)}</span>
+        <div style={{ borderTop: '1px solid var(--surface-border)', paddingTop: 10, fontSize: '0.72rem' }}>
+          <span style={{ color: 'var(--primary)' }}>{formatDistanceToNow(last_commit_at)}</span>
+          {last_commit_author && <span style={{ color: 'var(--text-muted)' }}> · {last_commit_author}</span>}
           {last_commit_msg && (
-            <span className="ml-1 truncate block text-gray-600">{last_commit_msg}</span>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {last_commit_msg}
+            </div>
           )}
-          {last_commit_author && <span className="text-gray-700"> by {last_commit_author}</span>}
         </div>
       )}
 
-      {/* Footer links */}
-      <div className="flex gap-3 mt-auto">
-        {github_url && (
-          <a href={github_url} target="_blank" rel="noreferrer"
-            className="text-xs text-gray-600 hover:text-teal-400 transition-colors">
-            GitHub &#8599;
-          </a>
-        )}
-      </div>
+      {/* GitHub link */}
+      {github_url && (
+        <a
+          href={github_url}
+          target="_blank" rel="noreferrer"
+          onClick={e => e.stopPropagation()}
+          style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textDecoration: 'none', marginTop: 'auto' }}
+          onMouseEnter={e => e.target.style.color = 'var(--primary)'}
+          onMouseLeave={e => e.target.style.color = 'var(--text-dim)'}
+        >
+          GitHub ↗
+        </a>
+      )}
     </div>
   )
 }

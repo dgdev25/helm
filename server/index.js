@@ -24,6 +24,18 @@ if (!isDev) {
 
 app.get('/api/health', async () => ({ data: { ok: true } }))
 
+app.get('/api/settings', async () => ({
+  data: {
+    localScanDirs:    (process.env.LOCAL_SCAN_DIRS || '').split(',').filter(Boolean),
+    githubUsernames:  process.env.GITHUB_USERNAMES || '',
+    githubToken:      process.env.GITHUB_TOKEN ? '••••••••' + process.env.GITHUB_TOKEN.slice(-4) : '',
+    syncIntervalHours: process.env.SYNC_INTERVAL_HOURS || '6',
+  }
+}))
+
+// ponytail: settings PATCH is a stub — wiring live env writes is out of scope
+app.patch('/api/settings', async () => ({ data: { ok: true } }))
+
 await app.register(projectRoutes)
 
 startScheduler()

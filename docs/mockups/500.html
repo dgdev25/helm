@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>500 — Server Error — Deathstar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#030712; --surface:rgba(255,255,255,0.04); --surface-border:rgba(255,255,255,0.07);
+      --text:#f1f5f9; --text-muted:#64748b; --danger:#ef4444;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+    h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
+    .error-code {
+      font-family:'JetBrains Mono',monospace;
+      font-size:7rem;
+      font-weight:700;
+      line-height:1;
+      color:rgba(239,68,68,0.5);
+      margin-bottom:16px;
+      animation:fadeInUp 0.5s ease both;
+    }
+    .error-title {
+      font-size:1.4rem;font-weight:600;color:var(--text);margin-bottom:8px;
+      animation:fadeInUp 0.5s ease 0.1s both;
+    }
+    .error-desc {
+      font-size:0.9rem;color:var(--text-muted);max-width:380px;text-align:center;line-height:1.6;
+      animation:fadeInUp 0.5s ease 0.15s both;
+    }
+    .error-box {
+      background:rgba(239,68,68,0.06);
+      border:1px solid rgba(239,68,68,0.15);
+      border-radius:10px;
+      padding:14px 20px;
+      margin-top:20px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.74rem;
+      color:#f87171;
+      max-width:480px;
+      width:100%;
+      animation:fadeInUp 0.5s ease 0.2s both;
+    }
+    .error-box .err-label { font-size:0.65rem; color:rgba(248,113,113,0.6); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.06em; }
+    .actions {
+      display:flex;gap:10px;margin-top:28px;animation:fadeInUp 0.5s ease 0.25s both;
+    }
+    .btn-retry {
+      background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.25);
+      color:#f87171;padding:10px 24px;border-radius:10px;font-size:0.85rem;
+      font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-decoration:none;
+      transition:200ms;
+    }
+    .btn-retry:hover{background:rgba(239,68,68,0.25);}
+    .btn-home {
+      background:var(--surface);border:1px solid var(--surface-border);
+      color:var(--text-muted);padding:10px 24px;border-radius:10px;font-size:0.85rem;
+      cursor:pointer;font-family:'Space Grotesk',sans-serif;text-decoration:none;transition:200ms;
+    }
+    .btn-home:hover{color:var(--text);}
+    .grid-bg{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(rgba(239,68,68,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.02) 1px,transparent 1px);background-size:40px 40px;}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    [data-theme="light"]{--bg:#f1f5f9;--surface:rgba(0,0,0,0.03);--surface-border:rgba(0,0,0,0.08);--text:#0f172a;--text-muted:#64748b;}
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="error-code">500</div>
+  <h1 class="error-title">Internal server error</h1>
+  <p class="error-desc">Something went wrong on our end. The API server encountered an unexpected condition.</p>
+  <div class="error-box">
+    <div class="err-label">Error</div>
+    PostgresError: Connection refused — ECONNREFUSED 127.0.0.1:5433
+  </div>
+  <div class="actions">
+    <a class="btn-retry" href="javascript:location.reload()">Retry</a>
+    <a class="btn-home" href="dashboard.html">Go home</a>
+  </div>
+</body>
+</html>

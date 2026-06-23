@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Not Found — Deathstar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:#229971; --primary-dark:#00665e; --gradient:linear-gradient(135deg,#229971,#cedc00);
+      --bg:#030712; --surface:rgba(255,255,255,0.04); --surface-border:rgba(255,255,255,0.07);
+      --text:#f1f5f9; --text-muted:#64748b;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+    h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
+    .error-code {
+      font-family:'JetBrains Mono',monospace;
+      font-size:7rem;
+      font-weight:700;
+      line-height:1;
+      background:var(--gradient);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin-bottom:16px;
+      animation:fadeInUp 0.5s ease both;
+    }
+    .error-title {
+      font-size:1.4rem;
+      font-weight:600;
+      color:var(--text);
+      margin-bottom:8px;
+      animation:fadeInUp 0.5s ease 0.1s both;
+    }
+    .error-desc {
+      font-size:0.9rem;
+      color:var(--text-muted);
+      max-width:380px;
+      text-align:center;
+      line-height:1.6;
+      animation:fadeInUp 0.5s ease 0.15s both;
+    }
+    .error-path {
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.78rem;
+      color:var(--text-muted);
+      background:var(--surface);
+      border:1px solid var(--surface-border);
+      border-radius:8px;
+      padding:8px 16px;
+      margin-top:20px;
+      animation:fadeInUp 0.5s ease 0.2s both;
+    }
+    .actions {
+      display:flex;
+      gap:10px;
+      margin-top:28px;
+      animation:fadeInUp 0.5s ease 0.25s both;
+    }
+    .btn-home {
+      background:var(--gradient);
+      border:none;
+      color:#fff;
+      padding:10px 24px;
+      border-radius:10px;
+      font-size:0.85rem;
+      font-weight:600;
+      cursor:pointer;
+      font-family:'Space Grotesk',sans-serif;
+      text-decoration:none;
+    }
+    .btn-back {
+      background:var(--surface);
+      border:1px solid var(--surface-border);
+      color:var(--text-muted);
+      padding:10px 24px;
+      border-radius:10px;
+      font-size:0.85rem;
+      cursor:pointer;
+      font-family:'Space Grotesk',sans-serif;
+      text-decoration:none;
+    }
+    .btn-back:hover { color:var(--text); }
+    .grid-bg {
+      position:fixed;inset:0;z-index:-1;
+      background-image:linear-gradient(rgba(34,153,113,0.03) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(34,153,113,0.03) 1px,transparent 1px);
+      background-size:40px 40px;
+    }
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    [data-theme="light"]{--bg:#f1f5f9;--surface:rgba(0,0,0,0.03);--surface-border:rgba(0,0,0,0.08);--text:#0f172a;--text-muted:#64748b;}
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="error-code">404</div>
+  <h1 class="error-title">Page not found</h1>
+  <p class="error-desc">The project, page, or endpoint you're looking for doesn't exist — or it may have been moved.</p>
+  <div class="error-path"><span style="color:var(--text-muted)"># </span>/dashboard/projects/unknown-repo</div>
+  <div class="actions">
+    <a class="btn-home" href="dashboard.html">Go home</a>
+    <a class="btn-back" href="javascript:history.back()">Go back</a>
+  </div>
+</body>
+</html>

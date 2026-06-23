@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — Deathstar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #229971; --primary-dark: #00665e; --primary-glow: rgba(34,153,113,0.15);
+      --accent: #cedc00; --gradient: linear-gradient(135deg, #229971, #cedc00);
+      --bg: #030712; --bg-2: #0f1117;
+      --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.07);
+      --surface-border: rgba(255,255,255,0.07);
+      --text: #f1f5f9; --text-muted: #64748b; --text-dim: #334155;
+      --shadow: 0 8px 32px rgba(0,0,0,0.5); --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+    h1,h2,h3,h4 { font-family:'Space Grotesk',sans-serif; }
+    .sidebar { width:220px; min-height:100vh; background:var(--bg-2);
+      border-right:1px solid var(--surface-border); display:flex;
+      flex-direction:column; position:sticky; top:0; height:100vh; flex-shrink:0; }
+    .sidebar-brand { padding:20px 16px 16px; border-bottom:1px solid var(--surface-border); }
+    .sidebar-brand h1 { font-size:1rem; font-weight:700; background:var(--gradient);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .sidebar-brand p { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
+    .sidebar-nav { flex:1; padding:12px 8px; display:flex; flex-direction:column; gap:2px; }
+    .nav-section-label { font-size:0.65rem; font-weight:600; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--text-dim); padding:8px 8px 4px; margin-top:8px; }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:8px;
+      font-size:0.82rem; color:var(--text-muted); cursor:pointer; transition:200ms;
+      border:none; background:none; width:100%; text-align:left; text-decoration:none; }
+    .nav-item:hover { background:var(--surface-hover); color:var(--text); }
+    .nav-item.active { background:var(--primary-glow); color:var(--primary); font-weight:500; }
+    .nav-badge { margin-left:auto; background:var(--surface); border:1px solid var(--surface-border);
+      border-radius:9999px; padding:1px 6px; font-size:0.65rem; color:var(--text-muted);
+      font-family:'JetBrains Mono',monospace; }
+    .sidebar-footer { padding:12px; border-top:1px solid var(--surface-border); display:flex; flex-direction:column; gap:8px; }
+    .sync-btn { background:linear-gradient(135deg,var(--primary-dark),#004d3f);
+      border:1px solid rgba(34,153,113,0.2); color:var(--primary); padding:9px 14px;
+      border-radius:9px; font-size:0.8rem; font-weight:600; cursor:pointer;
+      font-family:'Space Grotesk',sans-serif; transition:200ms; display:flex;
+      align-items:center; justify-content:center; gap:6px; }
+    .sync-status { font-size:0.68rem; color:var(--text-muted); text-align:center; font-family:'JetBrains Mono',monospace; }
+    .main { flex:1; display:flex; flex-direction:column; min-width:0; overflow:auto; }
+    .topbar { position:sticky; top:0; z-index:10; background:rgba(3,7,18,0.85);
+      backdrop-filter:blur(16px); border-bottom:1px solid var(--surface-border);
+      padding:12px 28px; display:flex; align-items:center; gap:8px; }
+    .topbar-title { font-size:0.9rem; font-weight:600; }
+    .theme-toggle { position:fixed; top:14px; right:16px; z-index:1000;
+      background:var(--surface); border:1px solid var(--surface-border);
+      backdrop-filter:blur(16px); border-radius:9999px; padding:6px 12px;
+      cursor:pointer; font-size:0.75rem; color:var(--text-muted); transition:200ms;
+      display:flex; align-items:center; gap:6px; }
+    .theme-toggle:hover { color:var(--text); }
+
+    /* Settings layout */
+    .settings-layout { display:grid; grid-template-columns:200px 1fr; gap:20px; padding:20px 28px 40px; }
+    .settings-nav { display:flex; flex-direction:column; gap:2px; position:sticky; top:70px; align-self:start; }
+    .settings-nav-item { padding:7px 12px; border-radius:8px; font-size:0.8rem;
+      color:var(--text-muted); cursor:pointer; transition:200ms; text-decoration:none; display:block; }
+    .settings-nav-item:hover { background:var(--surface-hover); color:var(--text); }
+    .settings-nav-item.active { background:var(--primary-glow); color:var(--primary); font-weight:500; }
+    .settings-content { display:flex; flex-direction:column; gap:20px; }
+
+    .section-card {
+      background:var(--surface); backdrop-filter:blur(16px);
+      border:1px solid var(--surface-border); border-radius:14px;
+      box-shadow:var(--shadow-sm);
+    }
+    .section-header { padding:18px 22px 16px; border-bottom:1px solid var(--surface-border); }
+    .section-title { font-size:0.9rem; font-weight:600; }
+    .section-desc { font-size:0.75rem; color:var(--text-muted); margin-top:3px; }
+    .section-body { padding:18px 22px; display:flex; flex-direction:column; gap:18px; }
+
+    .form-row { display:flex; flex-direction:column; gap:6px; }
+    .form-row.horizontal { flex-direction:row; align-items:center; justify-content:space-between; }
+    label { font-size:0.78rem; font-weight:500; color:var(--text); }
+    .form-hint { font-size:0.7rem; color:var(--text-muted); }
+    input[type="text"], input[type="number"], input[type="password"], textarea, select {
+      background:var(--surface); border:1px solid var(--surface-border); border-radius:9px;
+      padding:8px 12px; font-size:0.82rem; color:var(--text); outline:none;
+      font-family:'Inter',sans-serif; transition:200ms; width:100%;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color:rgba(34,153,113,0.4); box-shadow:0 0 0 3px rgba(34,153,113,0.08);
+    }
+    input::placeholder, textarea::placeholder { color:var(--text-muted); }
+    textarea { resize:vertical; min-height:80px; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+
+    .dir-list { display:flex; flex-direction:column; gap:6px; }
+    .dir-item { display:flex; align-items:center; gap:8px; background:var(--surface);
+      border:1px solid var(--surface-border); border-radius:8px; padding:8px 12px; }
+    .dir-path { flex:1; font-size:0.78rem; font-family:'JetBrains Mono',monospace; color:var(--text); }
+    .dir-remove { background:none; border:none; cursor:pointer; color:var(--text-dim);
+      padding:2px 4px; border-radius:4px; transition:200ms; display:flex; }
+    .dir-remove:hover { color:#f87171; background:rgba(239,68,68,0.1); }
+    .add-dir-btn { display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:9px;
+      background:var(--surface); border:1px solid var(--surface-border); color:var(--text-muted);
+      font-size:0.78rem; cursor:pointer; transition:200ms; width:fit-content; }
+    .add-dir-btn:hover { color:var(--primary); border-color:rgba(34,153,113,0.3); }
+
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; }
+    .toggle-info { flex:1; }
+    .toggle-label { font-size:0.82rem; font-weight:500; }
+    .toggle-desc { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
+    .toggle-switch { position:relative; width:40px; height:22px; flex-shrink:0; }
+    .toggle-switch input { display:none; }
+    .toggle-track { position:absolute; inset:0; background:var(--surface);
+      border:1px solid var(--surface-border); border-radius:9999px; cursor:pointer; transition:300ms; }
+    .toggle-switch input:checked + .toggle-track { background:var(--primary-dark); border-color:var(--primary); }
+    .toggle-knob { position:absolute; left:3px; top:3px; width:14px; height:14px;
+      background:var(--text-muted); border-radius:50%; transition:300ms; }
+    .toggle-switch input:checked ~ .toggle-knob { background:var(--primary); transform:translateX(18px); }
+
+    .secret-input { display:flex; gap:8px; }
+    .secret-input input { flex:1; font-family:'JetBrains Mono',monospace; letter-spacing:0.05em; }
+    .reveal-btn { background:var(--surface); border:1px solid var(--surface-border);
+      border-radius:9px; padding:8px 12px; cursor:pointer; color:var(--text-muted);
+      font-size:0.78rem; transition:200ms; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+    .reveal-btn:hover { color:var(--text); }
+
+    .slider-row { display:flex; align-items:center; gap:14px; }
+    input[type="range"] { flex:1; accent-color:var(--primary); }
+    .slider-val { font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--primary);
+      min-width:40px; text-align:right; }
+
+    .save-row { display:flex; justify-content:flex-end; gap:10px; padding-top:4px; }
+    .btn-save { background:var(--gradient); border:none; color:#fff; padding:9px 22px;
+      border-radius:9px; font-size:0.82rem; font-weight:600; cursor:pointer;
+      font-family:'Space Grotesk',sans-serif; transition:200ms; }
+    .btn-save:hover { opacity:0.85; }
+    .btn-cancel { background:var(--surface); border:1px solid var(--surface-border);
+      color:var(--text-muted); padding:9px 22px; border-radius:9px; font-size:0.82rem;
+      cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:200ms; }
+    .btn-cancel:hover { color:var(--text); }
+
+    .danger-zone { border-color:rgba(239,68,68,0.2); }
+    .danger-title { color:#f87171; }
+    .danger-action { display:flex; align-items:center; justify-content:space-between; padding:12px 0;
+      border-bottom:1px solid var(--surface-border); }
+    .danger-action:last-child { border-bottom:none; }
+    .danger-action-info p { font-size:0.8rem; font-weight:500; }
+    .danger-action-info span { font-size:0.72rem; color:var(--text-muted); }
+    .btn-danger { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2);
+      color:#f87171; padding:7px 16px; border-radius:8px; font-size:0.78rem;
+      cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:200ms; }
+    .btn-danger:hover { background:rgba(239,68,68,0.2); }
+
+    .sync-schedule { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .section-card { animation:fadeInUp 0.35s ease both; }
+    .section-card:nth-child(2) { animation-delay:0.06s; }
+    .section-card:nth-child(3) { animation-delay:0.12s; }
+    .section-card:nth-child(4) { animation-delay:0.18s; }
+
+    [data-theme="light"] {
+      --bg:#f1f5f9; --bg-2:#ffffff; --surface:rgba(0,0,0,0.03);
+      --surface-hover:rgba(0,0,0,0.06); --surface-border:rgba(0,0,0,0.08);
+      --text:#0f172a; --text-muted:#64748b; --text-dim:#cbd5e1;
+    }
+    @media(max-width:768px) {
+      .sidebar { display:none; }
+      .settings-layout { grid-template-columns:1fr; padding:16px; }
+      .settings-nav { flex-direction:row; flex-wrap:wrap; position:static; }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+    Theme
+  </button>
+
+  <aside class="sidebar">
+    <div class="sidebar-brand"><h1>Deathstar</h1><p>Project Dashboard</p></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Views</div>
+      <a class="nav-item" href="dashboard.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        All Projects<span class="nav-badge">90</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Active<span class="nav-badge">42</span>
+      </a>
+      <div class="nav-section-label">Explore</div>
+      <a class="nav-item" href="analytics.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Analytics
+      </a>
+      <a class="nav-item active" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="sync-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sync Now
+      </button>
+      <p class="sync-status">Last sync: 2m ago</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title">Settings</span>
+    </div>
+
+    <div class="settings-layout">
+      <!-- Settings sub-nav -->
+      <nav class="settings-nav">
+        <a class="settings-nav-item active" href="#local-dirs">Local Directories</a>
+        <a class="settings-nav-item" href="#github">GitHub</a>
+        <a class="settings-nav-item" href="#sync">Sync Schedule</a>
+        <a class="settings-nav-item" href="#display">Display</a>
+        <a class="settings-nav-item" href="#danger">Danger Zone</a>
+      </nav>
+
+      <div class="settings-content">
+
+        <!-- Local Directories -->
+        <div class="section-card" id="local-dirs">
+          <div class="section-header">
+            <div class="section-title">Local Directories</div>
+            <div class="section-desc">Directories scanned for local git repositories during each sync.</div>
+          </div>
+          <div class="section-body">
+            <div class="dir-list">
+              <div class="dir-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span class="dir-path">/home/lyle/dev</span>
+                <button class="dir-remove" title="Remove directory">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div class="dir-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span class="dir-path">/home/lyle/projects</span>
+                <button class="dir-remove" title="Remove directory">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+            <button class="add-dir-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add directory
+            </button>
+            <div class="form-hint">Subdirectories are scanned recursively up to 3 levels deep. Hidden directories (starting with <code style="font-family:'JetBrains Mono',monospace;font-size:0.75em">.</code>) are skipped.</div>
+            <div class="save-row">
+              <button class="btn-cancel">Cancel</button>
+              <button class="btn-save">Save Directories</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GitHub -->
+        <div class="section-card" id="github">
+          <div class="section-header">
+            <div class="section-title">GitHub Integration</div>
+            <div class="section-desc">Personal access token and accounts used to pull repository metadata.</div>
+          </div>
+          <div class="section-body">
+            <div class="form-row">
+              <label for="gh-token">Personal Access Token</label>
+              <div class="secret-input">
+                <input type="password" id="gh-token" value="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" placeholder="ghp_…">
+                <button class="reveal-btn" onclick="toggleSecret(this)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  Reveal
+                </button>
+              </div>
+              <span class="form-hint">Needs <code style="font-family:'JetBrains Mono',monospace;font-size:0.75em">repo</code> and <code style="font-family:'JetBrains Mono',monospace;font-size:0.75em">read:org</code> scopes.</span>
+            </div>
+            <div class="form-row">
+              <label for="gh-usernames">GitHub Usernames / Orgs</label>
+              <textarea id="gh-usernames" rows="3" placeholder="One username or org per line">dgdev25</textarea>
+              <span class="form-hint">All repos visible to the token for these accounts will be synced.</span>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Include private repositories</div>
+                <div class="toggle-desc">Requires token with private repo access</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Include forked repositories</div>
+                <div class="toggle-desc">Forks are typically excluded by default</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox">
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="save-row">
+              <button class="btn-cancel">Cancel</button>
+              <button class="btn-save">Save GitHub Settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sync Schedule -->
+        <div class="section-card" id="sync">
+          <div class="section-header">
+            <div class="section-title">Sync Schedule</div>
+            <div class="section-desc">How often Deathstar automatically syncs GitHub and local repos.</div>
+          </div>
+          <div class="section-body">
+            <div class="form-row">
+              <label for="sync-interval">Sync interval (hours)</label>
+              <div class="slider-row">
+                <input type="range" id="sync-interval" min="1" max="24" value="6" oninput="this.nextElementSibling.textContent=this.value+'h'">
+                <span class="slider-val">6h</span>
+              </div>
+              <span class="form-hint">Minimum 1 hour. Syncs run on a fixed interval from server start, not on a cron clock.</span>
+            </div>
+            <div class="sync-schedule">
+              <div class="form-row">
+                <label>Last sync</label>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--primary);padding:8px 12px;background:var(--surface);border:1px solid var(--surface-border);border-radius:9px">2m ago</div>
+              </div>
+              <div class="form-row">
+                <label>Next sync</label>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;color:var(--text-muted);padding:8px 12px;background:var(--surface);border:1px solid var(--surface-border);border-radius:9px">5h 58m</div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Enable background sync</div>
+                <div class="toggle-desc">Disable to sync manually only via the Sync Now button</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="save-row">
+              <button class="btn-cancel">Cancel</button>
+              <button class="btn-save">Save Sync Settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Display -->
+        <div class="section-card" id="display">
+          <div class="section-header">
+            <div class="section-title">Display</div>
+            <div class="section-desc">Appearance and default view preferences.</div>
+          </div>
+          <div class="section-body">
+            <div class="form-row">
+              <label for="default-sort">Default sort order</label>
+              <select id="default-sort">
+                <option selected>Last commit (newest first)</option>
+                <option>Alphabetical (A-Z)</option>
+                <option>Open issues (most first)</option>
+                <option>Stars (highest first)</option>
+                <option>Date added</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="default-status">Default status filter</label>
+              <select id="default-status">
+                <option value="">All statuses</option>
+                <option value="active" selected>Active only</option>
+                <option value="paused">Active + Paused</option>
+              </select>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Show local-only repos</div>
+                <div class="toggle-desc">Repos found in local scan dirs but not on GitHub</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Dim archived projects</div>
+                <div class="toggle-desc">Reduce visual weight of archived cards in the grid</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-knob"></div>
+              </label>
+            </div>
+            <div class="save-row">
+              <button class="btn-cancel">Cancel</button>
+              <button class="btn-save">Save Display Settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="section-card danger-zone" id="danger">
+          <div class="section-header" style="border-color:rgba(239,68,68,0.12)">
+            <div class="section-title danger-title">Danger Zone</div>
+            <div class="section-desc">These actions are irreversible.</div>
+          </div>
+          <div class="section-body">
+            <div class="danger-action">
+              <div class="danger-action-info">
+                <p>Clear sync log</p>
+                <span>Remove all entries from the github_sync_log table</span>
+              </div>
+              <button class="btn-danger">Clear Log</button>
+            </div>
+            <div class="danger-action">
+              <div class="danger-action-info">
+                <p>Reset all status overrides</p>
+                <span>Revert all projects to their automatically-detected status</span>
+              </div>
+              <button class="btn-danger">Reset Statuses</button>
+            </div>
+            <div class="danger-action">
+              <div class="danger-action-info">
+                <p>Wipe all project data</p>
+                <span>Drop and recreate the projects table — next sync rebuilds from scratch</span>
+              </div>
+              <button class="btn-danger">Wipe Data</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    }
+    function toggleSecret(btn) {
+      const inp = btn.closest('.secret-input').querySelector('input');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      btn.querySelector('text') || btn.querySelectorAll('*').forEach(() => {});
+      btn.lastChild.textContent = inp.type === 'password' ? 'Reveal' : 'Hide';
+    }
+    // Toggle knob behavior
+    document.querySelectorAll('.toggle-switch input').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const knob = this.closest('.toggle-switch').querySelector('.toggle-knob');
+        knob.style.transform = this.checked ? 'translateX(18px)' : 'translateX(0)';
+        knob.style.background = this.checked ? 'var(--primary)' : 'var(--text-muted)';
+        const track = this.nextElementSibling;
+        track.style.background = this.checked ? 'var(--primary-dark)' : '';
+        track.style.borderColor = this.checked ? 'var(--primary)' : '';
+      });
+    });
+  </script>
+</body>
+</html>

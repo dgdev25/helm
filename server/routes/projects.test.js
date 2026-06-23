@@ -39,4 +39,28 @@ describe('GET /api/projects', () => {
     const res = await app.inject({ method: 'GET', url: '/api/projects/does-not-exist' })
     assert.equal(res.statusCode, 404)
   })
+
+  it('filters by status', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/projects?status=active' })
+    assert.equal(res.statusCode, 200)
+    const body = JSON.parse(res.body)
+    assert.ok(body.data.every(p => p.status === 'active'))
+  })
+
+  it('patches project description', async () => {
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/projects/test-project',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ description: 'Updated desc' })
+    })
+    assert.equal(res.statusCode, 200)
+    assert.equal(JSON.parse(res.body).data.description, 'Updated desc')
+  })
+
+  it('returns sync log', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/sync/log' })
+    assert.equal(res.statusCode, 200)
+    assert.ok(Array.isArray(JSON.parse(res.body).data))
+  })
 })

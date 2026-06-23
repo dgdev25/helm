@@ -136,6 +136,7 @@ export default async function projectRoutes(app) {
       if (!project) return reply.code(404).send({ error: 'Not found' })
       if (!project.local_path) return reply.code(422).send({ error: 'No local path — primer requires a local repo' })
       const result = await runPrimer(project.local_path)
+      await sql`UPDATE projects SET primer_state = ${result.state}, updated_at = now() WHERE slug = ${project.slug}`
       return { data: result }
     } catch (err) {
       return reply.code(500).send({ error: err.message })

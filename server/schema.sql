@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS projects (
   open_issues INTEGER DEFAULT 0,
   is_private  BOOLEAN DEFAULT false,
   synopsis    TEXT,
+  primer_state TEXT,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );

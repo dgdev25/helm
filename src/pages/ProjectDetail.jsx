@@ -30,7 +30,7 @@ export default function ProjectDetail() {
   const [statusVal, setStatusVal] = useState(project?.status || 'active')
   const [deleting, setDeleting] = useState(false)
   const [activity, setActivity] = useState(null) // null = loading, [] = no data
-  const [primer, setPrimer] = useState(null)
+  const [primer, setPrimer] = useState(project?.primer_state || null)
   const [primerRunning, setPrimerRunning] = useState(false)
   const [primerError, setPrimerError] = useState(null)
 
@@ -39,7 +39,7 @@ export default function ProjectDetail() {
     setError(null)
     setStatusVal('')
     fetchProject(slug)
-      .then(p => { setProject(p); setStatusVal(p.status); setLoading(false) })
+      .then(p => { setProject(p); setStatusVal(p.status); if (p.primer_state) setPrimer(p.primer_state); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
   }, [slug])
 
@@ -211,31 +211,37 @@ export default function ProjectDetail() {
           </div>
 
           {/* Primer output */}
-          {primer && (
+          {p.local_path && (
             <div className="glass" style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <h3 style={{ fontSize: '0.85rem', fontWeight: 600 }}>✦ Project Primer</h3>
-                <button
-                  onClick={() => setPrimer(null)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.8rem' }}
-                >
-                  ✕
-                </button>
+                {primer && (
+                  <button
+                    onClick={handlePrimer}
+                    disabled={primerRunning}
+                    style={{ background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '3px 10px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}
+                  >
+                    {primerRunning ? 'Running…' : '↻ Re-run'}
+                  </button>
+                )}
               </div>
-              <pre style={{
-                fontSize: '0.75rem', lineHeight: 1.7, color: 'var(--text-muted)',
-                fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                margin: 0, maxHeight: 600, overflowY: 'auto',
-              }}>
-                {primer}
-              </pre>
-              <button
-                onClick={handlePrimer}
-                disabled={primerRunning}
-                style={{ marginTop: 14, background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '4px 12px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}
-              >
-                {primerRunning ? 'Running…' : '↻ Re-run'}
-              </button>
+              {primerRunning && (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', padding: '20px 0' }}>Running /primers on {p.local_path}…</div>
+              )}
+              {primerError && <p style={{ fontSize: '0.72rem', color: 'var(--danger)', marginBottom: 12 }}>{primerError}</p>}
+              {primer && !primerRunning ? (
+                <pre style={{
+                  fontSize: '0.75rem', lineHeight: 1.7, color: 'var(--text-muted)',
+                  fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  margin: 0, maxHeight: 600, overflowY: 'auto',
+                }}>
+                  {primer}
+                </pre>
+              ) : !primerRunning && (
+                <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>
+                  No primer yet — click "✦ Run /primers" in the sidebar to generate one.
+                </div>
+              )}
             </div>
           )}
         </div>

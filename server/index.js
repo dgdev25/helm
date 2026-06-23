@@ -41,6 +41,7 @@ await app.register(projectRoutes)
 
 // Migrate: add synopsis column if the DB predates it
 await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS synopsis TEXT`.catch(() => {})
+await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS primer_state TEXT`.catch(() => {})
 
 startScheduler()
 

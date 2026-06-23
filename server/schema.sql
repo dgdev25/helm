@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS projects (
   last_commit_author TEXT,
   open_issues INTEGER DEFAULT 0,
   is_private  BOOLEAN DEFAULT false,
+  synopsis    TEXT,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );

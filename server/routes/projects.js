@@ -6,6 +6,7 @@ import sql from '../db.js'
 const execFileAsync = promisify(execFile)
 import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
+import { generateSynopsis } from '../synopsis.js'
 
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {
@@ -123,6 +124,19 @@ export default async function projectRoutes(app) {
       const [project] = await sql`DELETE FROM projects WHERE slug = ${req.params.slug} RETURNING slug`
       if (!project) return reply.code(404).send({ error: 'Not found' })
       return { data: { deleted: project.slug } }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
+  app.post('/api/projects/:slug/synopsis', async (req, reply) => {
+    try {
+      const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+      const synopsis = await generateSynopsis(project)
+      if (!synopsis) return reply.code(422).send({ error: 'Could not generate synopsis' })
+      await sql`UPDATE projects SET synopsis = ${synopsis}, updated_at = now() WHERE slug = ${project.slug}`
+      return { data: { synopsis } }
     } catch (err) {
       return reply.code(500).send({ error: err.message })
     }

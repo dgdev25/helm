@@ -4,6 +4,7 @@ import cors from '@fastify/cors'
 import { fileURLToPath } from 'url'
 import { join, dirname } from 'path'
 import 'dotenv/config'
+import sql from './db.js'
 import { startScheduler } from './sync.js'
 import projectRoutes from './routes/projects.js'
 
@@ -37,6 +38,9 @@ app.get('/api/settings', async () => ({
 app.patch('/api/settings', async () => ({ data: { ok: true } }))
 
 await app.register(projectRoutes)
+
+// Migrate: add synopsis column if the DB predates it
+await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS synopsis TEXT`.catch(() => {})
 
 startScheduler()
 

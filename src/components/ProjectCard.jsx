@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from '../utils/time.js'
 import { safeHref } from '../utils/safeHref.js'
@@ -6,6 +7,20 @@ import TopicChip from './TopicChip.jsx'
 
 export default function ProjectCard({ project, skeleton }) {
   const navigate = useNavigate()
+  const [synopsis, setSynopsis] = useState(project?.synopsis || null)
+  const [generating, setGenerating] = useState(false)
+
+  const generateSynopsis = async (e) => {
+    e.stopPropagation()
+    setGenerating(true)
+    try {
+      const res = await fetch(`/api/projects/${project.slug}/synopsis`, { method: 'POST' })
+      const json = await res.json()
+      if (json.data?.synopsis) setSynopsis(json.data.synopsis)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   if (skeleton) {
     return (
@@ -20,7 +35,7 @@ export default function ProjectCard({ project, skeleton }) {
 
   const {
     slug, name, description, language, topics = [], stars = 0,
-    open_issues = 0, open_prs = 0, last_commit_at, last_commit_msg,
+    open_issues = 0, last_commit_at, last_commit_msg,
     last_commit_author, status, github_url, is_private, local_path,
   } = project
 
@@ -57,6 +72,32 @@ export default function ProjectCard({ project, skeleton }) {
         </div>
         <StatusPill status={status || 'active'} />
       </div>
+
+      {/* Synopsis */}
+      {synopsis ? (
+        <p style={{
+          fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5,
+          borderLeft: '2px solid var(--primary)', paddingLeft: 10,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>
+          {synopsis}
+        </p>
+      ) : (
+        <button
+          onClick={generateSynopsis}
+          disabled={generating}
+          style={{
+            alignSelf: 'flex-start', background: 'none', border: '1px dashed var(--surface-border)',
+            borderRadius: 6, padding: '3px 10px', fontSize: '0.7rem', color: 'var(--text-dim)',
+            cursor: generating ? 'wait' : 'pointer', fontFamily: "'Space Grotesk',sans-serif",
+            transition: 'var(--fast)',
+          }}
+          onMouseEnter={e => !generating && (e.target.style.borderColor = 'rgba(34,153,113,0.4)', e.target.style.color = 'var(--primary)')}
+          onMouseLeave={e => (e.target.style.borderColor = 'var(--surface-border)', e.target.style.color = 'var(--text-dim)')}
+        >
+          {generating ? '✦ Generating…' : '✦ Synopsis'}
+        </button>
+      )}
 
       {/* Topics */}
       {topics.length > 0 && (

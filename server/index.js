@@ -4,6 +4,8 @@ import cors from '@fastify/cors'
 import { fileURLToPath } from 'url'
 import { join, dirname } from 'path'
 import 'dotenv/config'
+import { startScheduler } from './sync.js'
+import { syncGitHub } from './github.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = process.env.NODE_ENV !== 'production'
@@ -20,5 +22,12 @@ if (!isDev) {
 }
 
 app.get('/api/health', async () => ({ data: { ok: true } }))
+
+app.post('/api/sync', async () => {
+  const count = await syncGitHub()
+  return { data: { updated: count } }
+})
+
+startScheduler()
 
 await app.listen({ port: Number(process.env.PORT) || 7337 })

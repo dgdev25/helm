@@ -23,9 +23,13 @@ if (!isDev) {
 
 app.get('/api/health', async () => ({ data: { ok: true } }))
 
-app.post('/api/sync', async () => {
-  const count = await syncGitHub()
-  return { data: { updated: count } }
+app.post('/api/sync', async (req, reply) => {
+  try {
+    const count = await syncGitHub()
+    return { data: { updated: count } }
+  } catch (err) {
+    return reply.code(500).send({ error: err.message })
+  }
 })
 
 startScheduler()

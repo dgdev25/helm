@@ -32,12 +32,6 @@ export async function fetchGitHubRepos(username) {
   return repos
 }
 
-export async function fetchOpenPRs(fullName) {
-  const [owner, repo] = fullName.split('/')
-  const { data } = await octokit.rest.pulls.list({ owner, repo, state: 'open', per_page: 100 })
-  return data.length
-}
-
 export async function syncGitHub() {
   const usernames = (process.env.GITHUB_USERNAMES || '').split(',').map(u => u.trim()).filter(Boolean)
   let updated = 0
@@ -58,7 +52,7 @@ export async function syncGitHub() {
           project.last_commit_author = commits[0].commit.author?.name || ''
           project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
         }
-      } catch (_) { /* repo may be empty */ }
+      } catch (err) { console.warn(`[sync] Failed to fetch commits for ${repo.full_name}: ${err.message}`) }
 
       await sql`
         INSERT INTO projects ${sql(project, 'name', 'slug', 'description', 'github_url', 'github_full_name', 'topics', 'language', 'stars', 'open_issues', 'is_private', 'last_commit_at', 'last_commit_msg', 'last_commit_author')}

@@ -7,7 +7,8 @@ import 'dotenv/config'
 
 export function parseGitLog(raw) {
   const [hash, message, author, dateStr] = raw.split('\x1f')
-  return { hash, message, author, date: new Date(dateStr) }
+  const date = new Date(dateStr)
+  return { hash, message, author, date: isNaN(date.getTime()) ? null : date }
 }
 
 function isGitRepo(dir) {
@@ -56,12 +57,12 @@ export async function scanLocalDirs() {
         VALUES (${name}, ${slug}, ${repoPath}, ${commit?.date?.toISOString() || null}, ${commit?.message || null}, ${commit?.author || null})
         ON CONFLICT (slug) DO UPDATE SET
           local_path = EXCLUDED.local_path,
-          last_commit_at = GREATEST(projects.last_commit_at, EXCLUDED.last_commit_at),
+          last_commit_at = COALESCE(GREATEST(projects.last_commit_at, EXCLUDED.last_commit_at), projects.last_commit_at),
           last_commit_msg = CASE
-            WHEN EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_msg
+            WHEN EXCLUDED.last_commit_at IS NOT NULL AND EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_msg
             ELSE projects.last_commit_msg END,
           last_commit_author = CASE
-            WHEN EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_author
+            WHEN EXCLUDED.last_commit_at IS NOT NULL AND EXCLUDED.last_commit_at > projects.last_commit_at THEN EXCLUDED.last_commit_author
             ELSE projects.last_commit_author END,
           updated_at = now()
       `

@@ -45,8 +45,12 @@ export const useStore = create((set, get) => ({
   },
 
   triggerSync: async () => {
-    set({ loading: true })
-    await api('/api/sync', { method: 'POST' })
-    await useStore.getState().fetchProjects()
+    set({ loading: true, error: null })
+    try {
+      await api('/api/sync', { method: 'POST' })
+      await useStore.getState().fetchProjects()
+    } catch (err) {
+      set({ loading: false, error: err.message })
+    }
   }
 }))

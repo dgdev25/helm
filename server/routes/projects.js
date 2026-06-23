@@ -33,6 +33,9 @@ export default async function projectRoutes(app) {
 
   app.patch('/api/projects/:slug', async (req, reply) => {
     try {
+      if (!req.body || typeof req.body !== 'object') {
+        return reply.code(400).send({ error: 'No valid fields' })
+      }
       const allowed = ['status', 'description']
       const updates = Object.fromEntries(
         Object.entries(req.body).filter(([k]) => allowed.includes(k))

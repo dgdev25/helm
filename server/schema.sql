@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS projects (
   topics      TEXT[] DEFAULT '{}',
   language    TEXT,
   stars       INTEGER DEFAULT 0,
-  status      TEXT DEFAULT 'active',
+  status      TEXT DEFAULT 'active' CHECK (status IN ('active', 'paused', 'archived')),
   last_commit_at  TIMESTAMPTZ,
   last_commit_msg TEXT,
   last_commit_author TEXT,

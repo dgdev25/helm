@@ -1,7 +1,9 @@
 // server/routes/projects.js
+import { spawnSync } from 'child_process'
 import sql from '../db.js'
 import { syncGitHub } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
+import { Octokit } from '@octokit/rest'
 
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {
@@ -49,6 +51,54 @@ export default async function projectRoutes(app) {
       `
       if (!project) return reply.code(404).send({ error: 'Not found' })
       return { data: project }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
+  app.get('/api/projects/:slug/commit-activity', async (req, reply) => {
+    try {
+      const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+
+      // Build 12 weekly buckets ending today
+      const weeks = Array.from({ length: 12 }, (_, i) => {
+        const end = new Date()
+        end.setDate(end.getDate() - (11 - i) * 7)
+        end.setHours(23, 59, 59, 999)
+        const start = new Date(end)
+        start.setDate(start.getDate() - 6)
+        start.setHours(0, 0, 0, 0)
+        return { start, end, count: 0, label: end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }
+      })
+
+      if (project.local_path) {
+        const result = spawnSync(
+          'git', ['-C', project.local_path, 'log', '--format=%aI', '--since=84 days ago'],
+          { encoding: 'utf8', timeout: 5000 }
+        )
+        if (result.status === 0 && result.stdout.trim()) {
+          for (const line of result.stdout.trim().split('\n')) {
+            const d = new Date(line.trim())
+            if (isNaN(d.getTime())) continue
+            for (const w of weeks) {
+              if (d >= w.start && d <= w.end) { w.count++; break }
+            }
+          }
+        }
+      } else if (project.github_full_name && process.env.GITHUB_TOKEN) {
+        try {
+          const gh = new Octokit({ auth: process.env.GITHUB_TOKEN })
+          const [owner, repo] = project.github_full_name.split('/')
+          const { data } = await gh.request('GET /repos/{owner}/{repo}/stats/commit_activity', { owner, repo })
+          // GitHub returns 52 weeks newest-last; take the last 12
+          if (Array.isArray(data)) {
+            data.slice(-12).forEach((w, i) => { weeks[i].count = w.total })
+          }
+        } catch (_) { /* leave counts at 0 */ }
+      }
+
+      return { data: weeks.map(({ label, count }) => ({ label, count })) }
     } catch (err) {
       return reply.code(500).send({ error: err.message })
     }

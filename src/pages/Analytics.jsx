@@ -37,7 +37,6 @@ export default function Analytics() {
   const langs = Object.entries(langMap).sort((a, b) => b[1] - a[1]).slice(0, 10)
 
   const donutRef  = useRef(null)
-  const trendRef  = useRef(null)
   const statusRef = useRef(null)
 
   useChart(donutRef, {
@@ -53,29 +52,7 @@ export default function Analytics() {
     }
   }, [projects.length])
 
-  useChart(trendRef, {
-    type: 'line',
-    data: {
-      labels: Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(); d.setDate(d.getDate() - (11 - i) * 7)
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      }),
-      datasets: [{
-        label: 'Commits',
-        data: Array.from({ length: 12 }, () => Math.floor(Math.random() * 20 + 5)),
-        borderColor: '#229971', backgroundColor: 'rgba(34,153,113,0.1)',
-        tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#229971',
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true },
-      }
-    }
-  }, [])
+  // trend chart omitted — would require scanning all repos; see per-project detail page
 
   useChart(statusRef, {
     type: 'bar',
@@ -98,8 +75,8 @@ export default function Analytics() {
     }
   }, [active, paused, archived])
 
-  // Heatmap: 364 cells, random placeholder
-  const heatmapData = Array.from({ length: 364 }, () => Math.floor(Math.random() * 5))
+  // heatmap requires full commit history scan across all repos — not yet implemented
+  const heatmapData = null
   const heatColor = (v) => {
     if (v === 0) return 'var(--surface)'
     if (v === 1) return 'rgba(34,153,113,0.3)'
@@ -130,15 +107,9 @@ export default function Analytics() {
         {/* Heatmap */}
         <div className="glass animate-in" style={{ ...cardStyle, marginBottom: 24 }}>
           <h3 style={sectionTitle}>Commit Heatmap — Last 12 Months</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(52,1fr)', gap: 2 }}>
-            {heatmapData.map((v, i) => (
-              <div key={i} title={`${v} commits`} style={{ aspectRatio: 1, borderRadius: 2, background: heatColor(v), cursor: 'default' }} />
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 10, fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-            <span>Less</span>
-            {[0,1,2,3,4].map(v => <div key={v} style={{ width: 10, height: 10, borderRadius: 2, background: heatColor(v) }} />)}
-            <span>More</span>
+          <div style={{ height: 60, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            <span>⚠</span>
+            <span>Requires per-project commit history scan — open a project detail page to see individual activity.</span>
           </div>
         </div>
 
@@ -164,7 +135,10 @@ export default function Analytics() {
 
           <div className="glass animate-in" style={cardStyle}>
             <h3 style={sectionTitle}>Weekly Commit Trend</h3>
-            <div style={{ height: 200 }}><canvas ref={trendRef} /></div>
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem', flexDirection: 'column', gap: 8 }}>
+              <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>⬛</span>
+              <span>No aggregate history yet — open individual projects to see their activity</span>
+            </div>
           </div>
         </div>
 
@@ -181,9 +155,11 @@ export default function Analytics() {
               ? <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>No sync history yet.</p>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {syncLog.slice(0, 8).map((entry, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 7 ? '1px solid var(--surface-border)' : 'none', fontSize: '0.75rem' }}>
-                      <span style={{ color: 'var(--text)' }}>{entry.repo_name || entry.source || 'sync'}</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{formatDistanceToNow(entry.synced_at)}</span>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 7 ? '1px solid var(--surface-border)' : 'none', fontSize: '0.75rem', gap: 12 }}>
+                      <span style={{ color: entry.status === 'error' ? 'var(--danger)' : 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.message || `sync — ${entry.projects_updated ?? 0} updated`}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{formatDistanceToNow(entry.synced_at)}</span>
                     </div>
                   ))}
                 </div>

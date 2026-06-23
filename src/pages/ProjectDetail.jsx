@@ -39,6 +39,7 @@ export default function ProjectDetail() {
   const [error, setError] = useState(null)
   const [statusVal, setStatusVal] = useState(project?.status || 'active')
   const [deleting, setDeleting] = useState(false)
+  const [activity, setActivity] = useState(null) // null = loading, [] = no data
 
   useEffect(() => {
     fetchProject(slug)
@@ -46,16 +47,24 @@ export default function ProjectDetail() {
       .catch(e => { setError(e.message); setLoading(false) })
   }, [slug])
 
+  // Fetch real commit activity from git log / GitHub API
   useEffect(() => {
-    if (!chartRef.current) return
+    fetch(`/api/projects/${slug}/commit-activity`)
+      .then(r => r.json())
+      .then(j => setActivity(j.data || []))
+      .catch(() => setActivity([]))
+  }, [slug])
+
+  useEffect(() => {
+    if (!chartRef.current || activity === null) return
     if (chartInstance.current) chartInstance.current.destroy()
     chartInstance.current = new Chart(chartRef.current, {
       type: 'bar',
       data: {
-        labels: weekLabels(),
+        labels: activity.map(w => w.label),
         datasets: [{
           label: 'Commits',
-          data: Array.from({ length: 12 }, () => Math.floor(Math.random() * 8)),
+          data: activity.map(w => w.count),
           backgroundColor: 'rgba(34,153,113,0.5)',
           borderColor: '#229971',
           borderWidth: 1,
@@ -67,12 +76,12 @@ export default function ProjectDetail() {
         plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => items[0].label } } },
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 }, stepSize: 1 }, beginAtZero: true },
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 }, stepSize: 1 }, beginAtZero: true, min: 0 },
         }
       }
     })
     return () => { if (chartInstance.current) chartInstance.current.destroy() }
-  }, [project])
+  }, [activity])
 
   const handleStatusChange = async (newStatus) => {
     setStatusVal(newStatus)
@@ -149,9 +158,12 @@ export default function ProjectDetail() {
           {/* Commit activity */}
           <div className="glass" style={{ padding: 20 }}>
             <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 16 }}>Commit Activity (12 weeks)</h3>
-            <div style={{ height: 160 }}>
-              <canvas ref={chartRef} />
-            </div>
+            {activity === null
+              ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>Loading…</div>
+              : activity.every(w => w.count === 0)
+                ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No commits in the last 12 weeks</div>
+                : <div style={{ height: 160 }}><canvas ref={chartRef} /></div>
+            }
           </div>
 
           {/* Recent commits */}

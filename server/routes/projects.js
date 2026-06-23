@@ -1,9 +1,8 @@
 // server/routes/projects.js
 import { spawnSync } from 'child_process'
 import sql from '../db.js'
-import { syncGitHub, syncOneRepo } from '../github.js'
+import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
-import { Octokit } from '@octokit/rest'
 
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {
@@ -88,12 +87,15 @@ export default async function projectRoutes(app) {
         }
       } else if (project.github_full_name && process.env.GITHUB_TOKEN) {
         try {
-          const gh = new Octokit({ auth: process.env.GITHUB_TOKEN })
           const [owner, repo] = project.github_full_name.split('/')
-          const { data } = await gh.request('GET /repos/{owner}/{repo}/stats/commit_activity', { owner, repo })
-          // GitHub returns 52 weeks newest-last; take the last 12
-          if (Array.isArray(data)) {
-            data.slice(-12).forEach((w, i) => { weeks[i].count = w.total })
+          const resp = await octokit.request('GET /repos/{owner}/{repo}/stats/commit_activity', { owner, repo })
+          if (resp.status === 202) {
+            // GitHub is still computing — tell the client to retry
+            return { data: weeks.map(({ label }) => ({ label, count: 0 })), computing: true }
+          }
+          // GitHub returns 52 weeks oldest-first; take the last 12
+          if (Array.isArray(resp.data)) {
+            resp.data.slice(-12).forEach((w, i) => { weeks[i].count = w.total })
           }
         } catch (_) { /* leave counts at 0 */ }
       }

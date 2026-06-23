@@ -51,12 +51,12 @@ export default function ProjectDetail() {
   useEffect(() => {
     fetch(`/api/projects/${slug}/commit-activity`)
       .then(r => r.json())
-      .then(j => setActivity(j.data || []))
+      .then(j => setActivity(j.computing ? 'computing' : (j.data || [])))
       .catch(() => setActivity([]))
   }, [slug])
 
   useEffect(() => {
-    if (!chartRef.current || activity === null) return
+    if (!chartRef.current || !Array.isArray(activity)) return
     if (chartInstance.current) chartInstance.current.destroy()
     chartInstance.current = new Chart(chartRef.current, {
       type: 'bar',
@@ -160,9 +160,11 @@ export default function ProjectDetail() {
             <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 16 }}>Commit Activity (12 weeks)</h3>
             {activity === null
               ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>Loading…</div>
-              : activity.every(w => w.count === 0)
-                ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No commits in the last 12 weeks</div>
-                : <div style={{ height: 160 }}><canvas ref={chartRef} /></div>
+              : activity === 'computing'
+                ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>GitHub is computing stats — check back in a moment</div>
+                : activity.every(w => w.count === 0)
+                  ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No commits in the last 12 weeks</div>
+                  : <div style={{ height: 160 }}><canvas ref={chartRef} /></div>
             }
           </div>
 

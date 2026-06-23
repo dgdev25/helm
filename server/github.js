@@ -3,7 +3,7 @@ import { Octokit } from '@octokit/rest'
 import sql from './db.js'
 import 'dotenv/config'
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
+export const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
 
 export function repoToProject(repo) {
   return {
@@ -59,23 +59,31 @@ export async function syncGitHub() {
   const usernames = (process.env.GITHUB_USERNAMES || '').split(',').map(u => u.trim()).filter(Boolean)
   let updated = 0
 
+  // Preload existing commit timestamps to skip unchanged repos (avoids N+1 API calls)
+  const existing = await sql`SELECT slug, last_commit_at FROM projects`
+  const knownAt = Object.fromEntries(existing.map(p => [p.slug, p.last_commit_at ? new Date(p.last_commit_at).getTime() : 0]))
+
   for (const username of usernames) {
     const repos = await fetchGitHubRepos(username)
     for (const repo of repos) {
       const project = repoToProject(repo)
 
-      // Fetch last commit details
-      try {
-        const [owner, repoName] = repo.full_name.split('/')
-        const { data: commits } = await octokit.rest.repos.listCommits({
-          owner, repo: repoName, per_page: 1
-        })
-        if (commits.length) {
-          project.last_commit_msg = commits[0].commit.message.split('\n')[0]
-          project.last_commit_author = commits[0].commit.author?.name || ''
-          project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
-        }
-      } catch (err) { console.warn(`[sync] Failed to fetch commits for ${repo.full_name}: ${err.message}`) }
+      // Only fetch commit details when pushed_at has advanced since last sync
+      const repoSlug = project.slug
+      const pushedMs = new Date(repo.pushed_at).getTime()
+      if (pushedMs > (knownAt[repoSlug] || 0)) {
+        try {
+          const [owner, repoName] = repo.full_name.split('/')
+          const { data: commits } = await octokit.rest.repos.listCommits({
+            owner, repo: repoName, per_page: 1
+          })
+          if (commits.length) {
+            project.last_commit_msg = commits[0].commit.message.split('\n')[0]
+            project.last_commit_author = commits[0].commit.author?.name || ''
+            project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
+          }
+        } catch (err) { console.warn(`[sync] Failed to fetch commits for ${repo.full_name}: ${err.message}`) }
+      }
 
       await sql`
         INSERT INTO projects ${sql(project, 'name', 'slug', 'description', 'github_url', 'github_full_name', 'topics', 'language', 'stars', 'open_issues', 'is_private', 'last_commit_at', 'last_commit_msg', 'last_commit_author')}

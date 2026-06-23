@@ -21,9 +21,13 @@ function useChart(ref, config, deps) {
 export default function Analytics() {
   const { projects } = useStore()
   const [syncLog, setSyncLog] = useState([])
+  const [syncLogError, setSyncLogError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/sync/log').then(r => r.json()).then(j => setSyncLog(j.data || [])).catch(() => {})
+    fetch('/api/sync/log')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
+      .then(j => setSyncLog(j.data || []))
+      .catch(e => setSyncLogError(e.message))
   }, [])
 
   const active   = projects.filter(p => p.status === 'active').length
@@ -91,7 +95,7 @@ export default function Analytics() {
   return (
     <div style={{ padding: '0 0 60px' }}>
       {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', marginBottom: 28 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', marginBottom: 28 }}>
         <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Analytics</span>
       </div>
 
@@ -152,7 +156,7 @@ export default function Analytics() {
           <div className="glass animate-in" style={cardStyle}>
             <h3 style={sectionTitle}>Recent Sync Log</h3>
             {syncLog.length === 0
-              ? <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>No sync history yet.</p>
+              ? <p style={{ color: syncLogError ? 'var(--danger)' : 'var(--text-muted)', fontSize: '0.82rem' }}>{syncLogError ? `Failed to load: ${syncLogError}` : 'No sync history yet.'}</p>
               : <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {syncLog.slice(0, 8).map((entry, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 7 ? '1px solid var(--surface-border)' : 'none', fontSize: '0.75rem', gap: 12 }}>

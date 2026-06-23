@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useStore } from '../store.js'
 import ProjectCard from '../components/ProjectCard.jsx'
 import StatCard from '../components/StatCard.jsx'
@@ -10,7 +12,28 @@ const STATUS_CHIPS = [
 ]
 
 export default function Dashboard() {
-  const { projects, loading, error, filters, setFilter } = useStore()
+  const { projects, loading, error, filters, setFilter, setFilters } = useStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const didInit = useRef(false)
+
+  // On mount: restore filters from URL
+  useEffect(() => {
+    const status = searchParams.get('status') || ''
+    const search = searchParams.get('search') || ''
+    const language = searchParams.get('language') || ''
+    if (status || search || language) setFilters({ status, search, language })
+    didInit.current = true
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep URL in sync when filters change (after init)
+  useEffect(() => {
+    if (!didInit.current) return
+    const params = {}
+    if (filters.status) params.status = filters.status
+    if (filters.search) params.search = filters.search
+    if (filters.language) params.language = filters.language
+    setSearchParams(params, { replace: true })
+  }, [filters.status, filters.search, filters.language]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const active   = projects.filter(p => p.status === 'active').length
   const paused   = projects.filter(p => p.status === 'paused').length
@@ -28,7 +51,7 @@ export default function Dashboard() {
   return (
     <div style={{ padding: '24px 28px 40px', maxWidth: 1400 }}>
       {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(16px)', margin: '-24px -28px 28px', padding: '12px 28px', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', margin: '-24px -28px 28px', padding: '12px 28px', borderBottom: '1px solid var(--surface-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ flex: 1 }}>
           <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Projects</span>
         </div>

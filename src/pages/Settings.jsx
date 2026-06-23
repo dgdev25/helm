@@ -135,7 +135,7 @@ export default function Settings() {
       if (s.githubUsernames) setUsernames(s.githubUsernames)
       if (s.syncIntervalHours) setSyncHours(Number(s.syncIntervalHours))
       if (s.githubToken) setToken(s.githubToken)
-    }).catch(() => {})
+    }).catch(e => console.warn('[settings] load failed:', e.message))
   }, [])
 
   const saveSection = async (key, body) => {
@@ -162,7 +162,7 @@ export default function Settings() {
   return (
     <div style={{ padding: 0 }}>
       {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', marginBottom: 0 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', marginBottom: 0 }}>
         <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Settings</span>
       </div>
 

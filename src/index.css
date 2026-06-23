@@ -56,6 +56,8 @@
   --danger:        #f87171;
   --danger-bg:     rgba(239,68,68,0.1);
   --danger-border: rgba(239,68,68,0.2);
+
+  --topbar-bg: rgba(3,7,18,0.85);
 }
 
 [data-theme="light"] {
@@ -71,6 +73,7 @@
   --shadow:     0 8px 32px rgba(0,0,0,0.08);
   --shadow-lg:  0 20px 60px rgba(0,0,0,0.12);
   --primary-glow: rgba(34,153,113,0.1);
+  --topbar-bg: rgba(241,245,249,0.85);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

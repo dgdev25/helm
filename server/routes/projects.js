@@ -1,7 +1,7 @@
 // server/routes/projects.js
 import { spawnSync } from 'child_process'
 import sql from '../db.js'
-import { syncGitHub } from '../github.js'
+import { syncGitHub, syncOneRepo } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
 import { Octokit } from '@octokit/rest'
 
@@ -129,7 +129,7 @@ export default async function projectRoutes(app) {
       if (!project) return reply.code(404).send({ error: 'Not found' })
       if (!project.github_full_name) return reply.code(400).send({ error: 'No GitHub repo linked' })
 
-      const count = await syncGitHub()
+      const count = await syncOneRepo(project.github_full_name)
       return { data: { updated: count } }
     } catch (err) {
       return reply.code(500).send({ error: err.message })

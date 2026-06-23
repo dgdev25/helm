@@ -32,6 +32,29 @@ export async function fetchGitHubRepos(username) {
   return repos
 }
 
+export async function syncOneRepo(fullName) {
+  const [owner, repoName] = fullName.split('/')
+  const { data: repo } = await octokit.rest.repos.get({ owner, repo: repoName })
+  const project = repoToProject(repo)
+  try {
+    const { data: commits } = await octokit.rest.repos.listCommits({ owner, repo: repoName, per_page: 1 })
+    if (commits.length) {
+      project.last_commit_msg = commits[0].commit.message.split('\n')[0]
+      project.last_commit_author = commits[0].commit.author?.name || ''
+      project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
+    }
+  } catch (err) { console.warn(`[sync] commits failed for ${fullName}: ${err.message}`) }
+  await sql`
+    INSERT INTO projects ${sql(project, 'name', 'slug', 'description', 'github_url', 'github_full_name', 'topics', 'language', 'stars', 'open_issues', 'is_private', 'last_commit_at', 'last_commit_msg', 'last_commit_author')}
+    ON CONFLICT (slug) DO UPDATE SET
+      description = EXCLUDED.description, topics = EXCLUDED.topics, language = EXCLUDED.language,
+      stars = EXCLUDED.stars, open_issues = EXCLUDED.open_issues,
+      last_commit_at = EXCLUDED.last_commit_at, last_commit_msg = EXCLUDED.last_commit_msg,
+      last_commit_author = EXCLUDED.last_commit_author, updated_at = now()
+  `
+  return 1
+}
+
 export async function syncGitHub() {
   const usernames = (process.env.GITHUB_USERNAMES || '').split(',').map(u => u.trim()).filter(Boolean)
   let updated = 0

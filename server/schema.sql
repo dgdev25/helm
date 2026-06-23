@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_projects_last_commit_at ON projects (last_commit_at DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects (status);
+CREATE INDEX IF NOT EXISTS idx_projects_language ON projects (language);
+
 CREATE TABLE IF NOT EXISTS github_sync_log (
   id         SERIAL PRIMARY KEY,
   synced_at  TIMESTAMPTZ DEFAULT now(),

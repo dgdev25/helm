@@ -17,17 +17,6 @@ async function fetchProject(slug) {
   return json.data
 }
 
-// Build 12-week labels
-function weekLabels() {
-  const labels = []
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i * 7)
-    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
-  }
-  return labels
-}
-
 export default function ProjectDetail() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -122,7 +111,7 @@ export default function ProjectDetail() {
   return (
     <div style={{ padding: '0 0 60px' }}>
       {/* Topbar */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(3,7,18,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--surface-border)', padding: '12px 28px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textDecoration: 'none' }}>Projects</Link>
         <span style={{ color: 'var(--text-dim)' }}>/</span>
         <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>{p.name}</span>

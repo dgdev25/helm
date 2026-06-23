@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS projects (
   last_commit_msg TEXT,
   last_commit_author TEXT,
   open_issues INTEGER DEFAULT 0,
-  open_prs    INTEGER DEFAULT 0,
   is_private  BOOLEAN DEFAULT false,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()

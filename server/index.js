@@ -12,7 +12,8 @@ const isDev = process.env.NODE_ENV !== 'production'
 
 const app = Fastify({ logger: true })
 
-await app.register(cors, { origin: isDev ? 'http://localhost:7338' : false })
+const frontendPort = process.env.FRONTEND_PORT ?? '47621'
+await app.register(cors, { origin: isDev ? `http://localhost:${frontendPort}` : false })
 
 if (!isDev) {
   await app.register(staticPlugin, {
@@ -27,4 +28,4 @@ await app.register(projectRoutes)
 
 startScheduler()
 
-await app.listen({ port: Number(process.env.PORT) || 7337 })
+await app.listen({ port: Number(process.env.PORT ?? process.env.BACKEND_PORT ?? '47821') })

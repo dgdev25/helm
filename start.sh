@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# start.sh — deathstar development launcher
+#
+#   API server (Fastify, Node.js)   → http://localhost:47821
+#   Frontend dev server (Vite)      → http://localhost:47621
+#
+# Usage:
+#   ./start.sh              # default dev mode
+#   ./start.sh --prod       # production build + serve
+#   ./start.sh --stop       # stop all services
+#   ./start.sh --rebuild    # force npm install even if up to date
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}"
+
+# ── Ports — single source of truth ───────────────────────────────────────────
+BACKEND_PORT=47821
+FRONTEND_PORT=47621
+export BACKEND_PORT FRONTEND_PORT
+export BACKEND_URL="http://localhost:${BACKEND_PORT}"
+export FRONTEND_URL="http://localhost:${FRONTEND_PORT}"
+export PORT="${BACKEND_PORT}"
+
+LOG_DIR="${PROJECT_ROOT}/logs"
+
+# ── Flags ─────────────────────────────────────────────────────────────────────
+PROD_MODE=false
+STOP_ONLY=false
+FORCE_REBUILD=false
+for arg in "$@"; do
+  case "${arg}" in
+    --prod)    PROD_MODE=true ;;
+    --stop)    STOP_ONLY=true ;;
+    --rebuild) FORCE_REBUILD=true ;;
+    *) echo "Unknown flag: ${arg}" >&2; exit 1 ;;
+  esac
+done
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+info()   { echo "  ${*}"; }
+ok()     { echo "  [ok] ${*}"; }
+warn()   { echo "  [warn] ${*}"; }
+die()    { echo "[fail] ${*}" >&2; exit 1; }
+header() { echo; echo "── ${*}"; }
+
+kill_port() {
+  local port="${1}"
+  local pids
+  pids="$(lsof -ti tcp:"${port}" 2>/dev/null || true)"
+  if [[ -n "${pids}" ]]; then
+    kill ${pids} 2>/dev/null || true
+    local retries=10
+    while [[ ${retries} -gt 0 ]] && lsof -ti tcp:"${port}" &>/dev/null; do
+      sleep 0.3; retries=$((retries - 1))
+    done
+    pids="$(lsof -ti tcp:"${port}" 2>/dev/null || true)"
+    [[ -n "${pids}" ]] && { kill -9 ${pids} 2>/dev/null || true; sleep 0.2; }
+    ok "Stopped process on port ${port}"
+  else
+    info "Port ${port} was not in use"
+  fi
+}
+
+wait_for_http() {
+  local url="${1}" label="${2}" log="${3:-}" timeout=30 elapsed=0
+  while ! curl -sf --max-time 2 "${url}" &>/dev/null; do
+    sleep 0.5; elapsed=$((elapsed + 1))
+    if [[ ${elapsed} -ge $((timeout * 2)) ]]; then
+      local hint=""; [[ -n "${log}" ]] && hint=" — check ${log}"
+      die "${label} did not respond at ${url} after ${timeout}s${hint}"
+    fi
+  done
+}
+
+npm_needs_install() {
+  [[ ! -d "${PROJECT_ROOT}/node_modules" ]] && return 0
+  [[ "${PROJECT_ROOT}/package.json" -nt "${PROJECT_ROOT}/node_modules/.package-lock.json" ]]
+}
+
+# ── 1. Dependency checks ──────────────────────────────────────────────────────
+header "1. Checking dependencies"
+
+command -v node &>/dev/null  || die "node not found — install from https://nodejs.org"
+ok "Node: $(node --version)"
+
+command -v npm &>/dev/null   || die "npm not found"
+ok "npm: $(npm --version)"
+
+command -v curl &>/dev/null  || die "curl not found — required for health checks"
+command -v lsof &>/dev/null  || warn "lsof not found — port cleanup disabled"
+
+if [[ ! -f "${PROJECT_ROOT}/.env" ]]; then
+  if [[ -f "${PROJECT_ROOT}/.env.example" ]]; then
+    cp "${PROJECT_ROOT}/.env.example" "${PROJECT_ROOT}/.env"
+    warn ".env created from .env.example — fill in DATABASE_URL, GITHUB_TOKEN, GITHUB_USERNAMES"
+  else
+    die ".env not found and no .env.example to copy from"
+  fi
+else
+  ok ".env present"
+fi
+
+# Warn on obvious placeholders
+if grep -qE 'placeholder|changeme|your_token_here|user:password' "${PROJECT_ROOT}/.env" 2>/dev/null; then
+  warn ".env contains placeholder values — update DATABASE_URL / GITHUB_TOKEN before syncing"
+fi
+
+# Load .env so PORT/DATABASE_URL etc. are available
+set -a; source "${PROJECT_ROOT}/.env"; set +a
+# Re-export ports so they override anything in .env
+export PORT="${BACKEND_PORT}" BACKEND_PORT FRONTEND_PORT
+
+# ── 2. Stop running services ──────────────────────────────────────────────────
+header "2. Stopping services"
+if command -v lsof &>/dev/null; then
+  kill_port "${BACKEND_PORT}"
+  kill_port "${FRONTEND_PORT}"
+else
+  pkill -f "server/index.js" 2>/dev/null || true
+  pkill -f "vite"            2>/dev/null || true
+  sleep 1
+fi
+
+[[ "${STOP_ONLY}" == true ]] && { echo; ok "All services stopped."; exit 0; }
+
+# ── 3. Install / build ────────────────────────────────────────────────────────
+header "3. Installing dependencies"
+mkdir -p "${LOG_DIR}"
+
+if [[ "${FORCE_REBUILD}" == true ]] || npm_needs_install; then
+  info "Running npm install..."
+  npm install --prefix "${PROJECT_ROOT}" --silent
+  ok "npm deps installed"
+else
+  ok "node_modules up to date — skipping install (use --rebuild to force)"
+fi
+
+if [[ "${PROD_MODE}" == true ]]; then
+  header "3b. Building frontend (production)"
+  info "Running vite build..."
+  npm run build --prefix "${PROJECT_ROOT}" 2>&1 | tail -5
+  ok "Frontend built to dist/"
+fi
+
+# ── 4. Start services ─────────────────────────────────────────────────────────
+header "4. Starting services"
+
+if [[ "${PROD_MODE}" == true ]]; then
+  info "Starting API server in production mode (port ${BACKEND_PORT})..."
+  NODE_ENV=production node "${PROJECT_ROOT}/server/index.js" \
+    >"${LOG_DIR}/server.log" 2>&1 &
+  SERVER_PID=$!
+  wait_for_http "${BACKEND_URL}/api/health" "API server" "${LOG_DIR}/server.log"
+  kill -0 "${SERVER_PID}" 2>/dev/null || die "API server exited immediately — check ${LOG_DIR}/server.log"
+  ok "API server running (PID ${SERVER_PID}, port ${BACKEND_PORT}) — serving frontend at ${BACKEND_URL}"
+
+  echo
+  echo "┌─────────────────────────────────────────────────┐"
+  echo "│  Deathstar is running (production)              │"
+  echo "├─────────────────────────────────────────────────┤"
+  printf "│  %-14s  %-30s │\n" "App + API" "${BACKEND_URL}"
+  echo "├─────────────────────────────────────────────────┤"
+  echo "│  Logs: ${LOG_DIR}/server.log                    │"
+  echo "│  Stop: ./start.sh --stop                        │"
+  echo "└─────────────────────────────────────────────────┘"
+  echo
+  exit 0
+fi
+
+# Dev mode: API server + Vite dev server
+info "Starting API server (port ${BACKEND_PORT})..."
+node --watch "${PROJECT_ROOT}/server/index.js" \
+  >"${LOG_DIR}/server.log" 2>&1 &
+SERVER_PID=$!
+wait_for_http "${BACKEND_URL}/api/health" "API server" "${LOG_DIR}/server.log"
+kill -0 "${SERVER_PID}" 2>/dev/null || die "API server exited immediately — check ${LOG_DIR}/server.log"
+ok "API server running (PID ${SERVER_PID}, port ${BACKEND_PORT})"
+
+info "Starting Vite dev server (port ${FRONTEND_PORT})..."
+npm run dev:client --prefix "${PROJECT_ROOT}" \
+  >"${LOG_DIR}/vite.log" 2>&1 &
+VITE_PID=$!
+wait_for_http "${FRONTEND_URL}/" "Vite dev server" "${LOG_DIR}/vite.log"
+kill -0 "${VITE_PID}" 2>/dev/null || die "Vite exited immediately — check ${LOG_DIR}/vite.log"
+ok "Vite dev server running (PID ${VITE_PID}, port ${FRONTEND_PORT})"
+
+# ── Done ──────────────────────────────────────────────────────────────────────
+echo
+echo "┌─────────────────────────────────────────────────┐"
+echo "│  Deathstar is running                           │"
+echo "├─────────────────────────────────────────────────┤"
+printf "│  %-14s  %-30s │\n" "Frontend" "${FRONTEND_URL}"
+printf "│  %-14s  %-30s │\n" "API"      "${BACKEND_URL}"
+echo "├─────────────────────────────────────────────────┤"
+echo "│  Logs: ${LOG_DIR}/                              │"
+echo "│  Stop: ./start.sh --stop                        │"
+echo "└─────────────────────────────────────────────────┘"
+echo

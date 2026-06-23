@@ -1,6 +1,9 @@
 // server/routes/projects.js
-import { spawnSync } from 'child_process'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import sql from '../db.js'
+
+const execFileAsync = promisify(execFile)
 import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
 
@@ -72,19 +75,19 @@ export default async function projectRoutes(app) {
       })
 
       if (project.local_path) {
-        const result = spawnSync(
-          'git', ['-C', project.local_path, 'log', '--format=%aI', '--since=84 days ago'],
-          { encoding: 'utf8', timeout: 5000 }
-        )
-        if (result.status === 0 && result.stdout.trim()) {
-          for (const line of result.stdout.trim().split('\n')) {
+        try {
+          const { stdout } = await execFileAsync(
+            'git', ['-C', project.local_path, 'log', '--format=%aI', '--since=84 days ago'],
+            { encoding: 'utf8', timeout: 5000 }
+          )
+          for (const line of stdout.trim().split('\n').filter(Boolean)) {
             const d = new Date(line.trim())
             if (isNaN(d.getTime())) continue
             for (const w of weeks) {
               if (d >= w.start && d <= w.end) { w.count++; break }
             }
           }
-        }
+        } catch { /* repo not found or no commits — leave counts at 0 */ }
       } else if (project.github_full_name && process.env.GITHUB_TOKEN) {
         try {
           const [owner, repo] = project.github_full_name.split('/')

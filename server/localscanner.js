@@ -1,6 +1,9 @@
 // server/localscanner.js
-import { spawnSync } from 'child_process'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import { readdirSync, existsSync } from 'fs'
+
+const execFileAsync = promisify(execFile)
 import { join } from 'path'
 import sql from './db.js'
 import 'dotenv/config'
@@ -27,14 +30,14 @@ function getRepoDirs(baseDir) {
   }
 }
 
-function getLastCommit(repoPath) {
-  const result = spawnSync(
-    'git',
-    ['-C', repoPath, 'log', '-1', '--format=%h\x1f%s\x1f%an\x1f%aI'],
-    { encoding: 'utf8', timeout: 5000 }
-  )
-  if (result.status !== 0 || !result.stdout.trim()) return null
-  return parseGitLog(result.stdout.trim())
+async function getLastCommit(repoPath) {
+  try {
+    const { stdout } = await execFileAsync(
+      'git', ['-C', repoPath, 'log', '-1', '--format=%h\x1f%s\x1f%an\x1f%aI'],
+      { encoding: 'utf8', timeout: 5000 }
+    )
+    return stdout.trim() ? parseGitLog(stdout.trim()) : null
+  } catch { return null }
 }
 
 function getRepoName(repoPath) {
@@ -60,7 +63,7 @@ export async function scanLocalDirs() {
         slug = `${slug}-${parent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`.replace(/-+/g, '-').replace(/-$/, '')
       }
       slugToPath[slug] = repoPath
-      const commit = getLastCommit(repoPath)
+      const commit = await getLastCommit(repoPath)
 
       await sql`
         INSERT INTO projects (name, slug, local_path, last_commit_at, last_commit_msg, last_commit_author)

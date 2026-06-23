@@ -60,8 +60,9 @@ export default function ProjectDetail() {
   }, [slug])
 
   useEffect(() => {
+    // Always destroy previous instance before branching (canvas may be replaced by empty-state div)
+    if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null }
     if (!chartRef.current || !Array.isArray(activity)) return
-    if (chartInstance.current) chartInstance.current.destroy()
     chartInstance.current = new Chart(chartRef.current, {
       type: 'bar',
       data: {
@@ -84,7 +85,7 @@ export default function ProjectDetail() {
         }
       }
     })
-    return () => { if (chartInstance.current) chartInstance.current.destroy() }
+    return () => { if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null } }
   }, [activity])
 
   const handleStatusChange = async (newStatus) => {

@@ -30,6 +30,9 @@ export default function ProjectDetail() {
   const [statusVal, setStatusVal] = useState(project?.status || 'active')
   const [deleting, setDeleting] = useState(false)
   const [activity, setActivity] = useState(null) // null = loading, [] = no data
+  const [primer, setPrimer] = useState(null)
+  const [primerRunning, setPrimerRunning] = useState(false)
+  const [primerError, setPrimerError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -84,6 +87,21 @@ export default function ProjectDetail() {
       setProject(p => ({ ...p, status: newStatus }))
     } catch (e) {
       setError(e.message)
+    }
+  }
+
+  const handlePrimer = async () => {
+    setPrimerRunning(true)
+    setPrimerError(null)
+    try {
+      const res = await fetch(`/api/projects/${slug}/primer`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Primer failed')
+      setPrimer(json.data.state)
+    } catch (e) {
+      setPrimerError(e.message)
+    } finally {
+      setPrimerRunning(false)
     }
   }
 
@@ -191,6 +209,35 @@ export default function ProjectDetail() {
             <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 16 }}>Recent Commits</h3>
             <CommitList project={p} />
           </div>
+
+          {/* Primer output */}
+          {primer && (
+            <div className="glass" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 600 }}>✦ Project Primer</h3>
+                <button
+                  onClick={() => setPrimer(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.8rem' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <pre style={{
+                fontSize: '0.75rem', lineHeight: 1.7, color: 'var(--text-muted)',
+                fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                margin: 0, maxHeight: 600, overflowY: 'auto',
+              }}>
+                {primer}
+              </pre>
+              <button
+                onClick={handlePrimer}
+                disabled={primerRunning}
+                style={{ marginTop: 14, background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '4px 12px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}
+              >
+                {primerRunning ? 'Running…' : '↻ Re-run'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right sidebar */}
@@ -239,6 +286,27 @@ export default function ProjectDetail() {
                   Homepage ↗
                 </a>
               )}
+            </div>
+          )}
+
+          {/* Primer */}
+          {p.local_path && (
+            <div className="glass" style={{ padding: 18 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 10 }}>Project Primer</div>
+              <button
+                onClick={handlePrimer}
+                disabled={primerRunning}
+                style={{
+                  width: '100%', padding: '8px 14px', background: 'var(--gradient-btn)',
+                  border: '1px solid rgba(34,153,113,0.2)', borderRadius: 8, color: '#fff',
+                  fontSize: '0.8rem', cursor: primerRunning ? 'wait' : 'pointer',
+                  fontFamily: "'Space Grotesk',sans-serif", transition: 'var(--fast)',
+                  opacity: primerRunning ? 0.7 : 1,
+                }}
+              >
+                {primerRunning ? '✦ Running primer…' : '✦ Run /primers'}
+              </button>
+              {primerError && <p style={{ fontSize: '0.72rem', color: 'var(--danger)', marginTop: 8 }}>{primerError}</p>}
             </div>
           )}
 

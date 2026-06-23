@@ -7,6 +7,7 @@ const execFileAsync = promisify(execFile)
 import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
 import { generateSynopsis } from '../synopsis.js'
+import { runPrimer } from '../primer.js'
 
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {
@@ -124,6 +125,18 @@ export default async function projectRoutes(app) {
       const [project] = await sql`DELETE FROM projects WHERE slug = ${req.params.slug} RETURNING slug`
       if (!project) return reply.code(404).send({ error: 'Not found' })
       return { data: { deleted: project.slug } }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
+  app.post('/api/projects/:slug/primer', async (req, reply) => {
+    try {
+      const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+      if (!project.local_path) return reply.code(422).send({ error: 'No local path — primer requires a local repo' })
+      const result = await runPrimer(project.local_path)
+      return { data: result }
     } catch (err) {
       return reply.code(500).send({ error: err.message })
     }

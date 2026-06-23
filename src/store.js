@@ -18,8 +18,9 @@ export const useStore = create((set, get) => ({
   filters: { search: '', status: '', language: '' },
 
   setFilter: (key, value) => {
-    set(s => ({ filters: { ...s.filters, [key]: value } }))
-    get().fetchProjects({ ...get().filters, [key]: value })
+    const updated = { ...get().filters, [key]: value }
+    set({ filters: updated })
+    get().fetchProjects(updated)
   },
 
   fetchProjects: async (params = {}) => {

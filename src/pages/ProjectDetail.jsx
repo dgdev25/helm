@@ -42,6 +42,9 @@ export default function ProjectDetail() {
   const [activity, setActivity] = useState(null) // null = loading, [] = no data
 
   useEffect(() => {
+    setLoading(true)
+    setError(null)
+    setStatusVal('')
     fetchProject(slug)
       .then(p => { setProject(p); setStatusVal(p.status); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })

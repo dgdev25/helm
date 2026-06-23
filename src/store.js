@@ -23,6 +23,12 @@ export const useStore = create((set, get) => ({
     get().fetchProjects(updated)
   },
 
+  setFilters: (partial) => {
+    const updated = { ...get().filters, ...partial }
+    set({ filters: updated })
+    get().fetchProjects(updated)
+  },
+
   fetchProjects: async (params = {}) => {
     set({ loading: true, error: null })
     try {

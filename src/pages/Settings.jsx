@@ -112,8 +112,19 @@ export default function Settings() {
   const [token, setToken] = useState('')
   const [usernames, setUsernames] = useState('')
   const [syncHours, setSyncHours] = useState(6)
-  const [darkMode, setDarkMode] = useState(true)
-  const [compactCards, setCompactCards] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('ds-theme') || 'dark') !== 'light')
+  const [compactCards, setCompactCards] = useState(() => document.documentElement.dataset.compact === 'true')
+
+  const handleDarkMode = (val) => {
+    setDarkMode(val)
+    document.documentElement.dataset.theme = val ? 'dark' : 'light'
+    localStorage.setItem('ds-theme', val ? 'dark' : 'light')
+  }
+  const handleCompact = (val) => {
+    setCompactCards(val)
+    document.documentElement.dataset.compact = val
+    localStorage.setItem('ds-compact', val)
+  }
 
   // Load env-derived settings from API
   useEffect(() => {
@@ -130,7 +141,8 @@ export default function Settings() {
   const saveSection = async (key, body) => {
     setSaving(s => ({ ...s, [key]: true }))
     try {
-      await fetch('/api/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const res = await fetch('/api/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      if (!res.ok) throw new Error(`Server error ${res.status}`)
       setSaved(s => ({ ...s, [key]: true }))
       setTimeout(() => setSaved(s => ({ ...s, [key]: false })), 2000)
     } catch (e) {
@@ -212,8 +224,8 @@ export default function Settings() {
           {/* Display */}
           {activeSection === 'Display' && (
             <SectionCard title="Display" desc="Visual preferences.">
-              <ToggleSwitch checked={darkMode} onChange={setDarkMode} label="Dark Mode" description="Use dark background and light text." />
-              <ToggleSwitch checked={compactCards} onChange={setCompactCards} label="Compact Cards" description="Reduce card padding for denser grid." />
+              <ToggleSwitch checked={darkMode} onChange={handleDarkMode} label="Dark Mode" description="Use dark background and light text." />
+              <ToggleSwitch checked={compactCards} onChange={handleCompact} label="Compact Cards" description="Reduce card padding for denser grid." />
               <SaveButton onClick={() => saveSection('display', { darkMode, compactCards })} saving={saving.display} saved={saved.display} />
             </SectionCard>
           )}

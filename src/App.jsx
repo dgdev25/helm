@@ -9,9 +9,11 @@ import NotFound from './pages/NotFound.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import { useStore } from './store.js'
 
-// Apply saved theme before first paint
+// Apply saved preferences before first paint
 const saved = localStorage.getItem('ds-theme')
 if (saved) document.documentElement.dataset.theme = saved
+const compact = localStorage.getItem('ds-compact')
+if (compact) document.documentElement.dataset.compact = compact
 
 export default function App() {
   const { fetchProjects } = useStore()

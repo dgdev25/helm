@@ -14,7 +14,7 @@ const BOTTOM_NAV = [
 ]
 
 export default function Sidebar() {
-  const { filters, setFilter, triggerSync, loading, projects } = useStore()
+  const { filters, setFilters, triggerSync, loading, projects } = useStore()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -36,9 +36,7 @@ export default function Sidebar() {
     location.pathname === '/' && filters.status === status
 
   const handleNavClick = (status) => {
-    setFilter('status', status)
-    setFilter('search', '')
-    setFilter('language', '')
+    setFilters({ status, search: '', language: '' })
     if (location.pathname !== '/') navigate('/')
   }
 

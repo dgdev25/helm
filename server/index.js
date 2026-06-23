@@ -5,8 +5,7 @@ import { fileURLToPath } from 'url'
 import { join, dirname } from 'path'
 import 'dotenv/config'
 import { startScheduler } from './sync.js'
-import { syncGitHub } from './github.js'
-import { scanLocalDirs } from './localscanner.js'
+import projectRoutes from './routes/projects.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = process.env.NODE_ENV !== 'production'
@@ -24,23 +23,7 @@ if (!isDev) {
 
 app.get('/api/health', async () => ({ data: { ok: true } }))
 
-app.post('/api/sync', async (req, reply) => {
-  try {
-    const count = await syncGitHub()
-    return { data: { updated: count } }
-  } catch (err) {
-    return reply.code(500).send({ error: err.message })
-  }
-})
-
-app.post('/api/scan/local', async (req, reply) => {
-  try {
-    const count = await scanLocalDirs()
-    return { data: { scanned: count } }
-  } catch (err) {
-    return reply.code(500).send({ error: err.message })
-  }
-})
+await app.register(projectRoutes)
 
 startScheduler()
 

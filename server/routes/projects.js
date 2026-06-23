@@ -104,6 +104,15 @@ export default async function projectRoutes(app) {
     }
   })
 
+  app.delete('/api/projects', async (req, reply) => {
+    try {
+      const result = await sql`DELETE FROM projects`
+      return { data: { deleted: result.count } }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
   app.delete('/api/projects/:slug', async (req, reply) => {
     try {
       const [project] = await sql`DELETE FROM projects WHERE slug = ${req.params.slug} RETURNING slug`

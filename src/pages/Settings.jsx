@@ -44,6 +44,64 @@ function SaveButton({ onClick, saving, saved }) {
   )
 }
 
+function DangerZone() {
+  const [loading, setLoading] = useState(null)
+  const ACTIONS = [
+    {
+      action: 'clear', label: 'Clear all projects',
+      desc: 'Removes all projects from the database. Does not delete actual repos.',
+      run: () => fetch('/api/projects', { method: 'DELETE' }),
+    },
+    {
+      action: 'resync', label: 'Re-sync everything',
+      desc: 'Triggers a full re-scan of local dirs and GitHub.',
+      run: () => Promise.all([fetch('/api/sync', { method: 'POST' }), fetch('/api/scan/local', { method: 'POST' })]),
+    },
+    {
+      action: 'reset-settings', label: 'Reset settings',
+      desc: 'Settings are read from .env — edit that file and restart to reset.',
+      run: () => Promise.resolve(),
+    },
+  ]
+  const handle = async ({ action, label, run }) => {
+    if (!window.confirm(`Are you sure you want to: ${label}?`)) return
+    setLoading(action)
+    try {
+      await run()
+      alert(`${label} completed.`)
+    } catch (e) {
+      alert('Failed: ' + e.message)
+    } finally {
+      setLoading(null)
+    }
+  }
+  return (
+    <div className="glass" style={{ border: '1px solid var(--danger-border)' }}>
+      <div style={{ padding: '18px 22px 16px', borderBottom: '1px solid var(--danger-border)' }}>
+        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--danger)' }}>Danger Zone</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>These actions are irreversible.</div>
+      </div>
+      <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {ACTIONS.map(item => (
+          <div key={item.action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 500 }}>{item.label}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.desc}</div>
+            </div>
+            <button
+              disabled={loading === item.action}
+              onClick={() => handle(item)}
+              style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger)', padding: '7px 16px', borderRadius: 8, fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif", flexShrink: 0 }}
+            >
+              {loading === item.action ? '…' : item.label}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const [activeSection, setActiveSection] = useState(SECTIONS[0])
   const [saving, setSaving] = useState({})
@@ -162,32 +220,7 @@ export default function Settings() {
 
           {/* Danger Zone */}
           {activeSection === 'Danger Zone' && (
-            <div className="glass" style={{ border: '1px solid var(--danger-border)' }}>
-              <div style={{ padding: '18px 22px 16px', borderBottom: '1px solid var(--danger-border)' }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--danger)' }}>Danger Zone</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3 }}>These actions are irreversible.</div>
-              </div>
-              <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {[
-                  { label: 'Clear all projects', desc: 'Removes all projects from the database. Does not delete actual repos.', action: 'clear' },
-                  { label: 'Reset settings', desc: 'Resets all settings to their defaults.', action: 'reset-settings' },
-                  { label: 'Re-sync everything', desc: 'Triggers a full re-scan of all sources.', action: 'resync' },
-                ].map(({ label, desc, action }) => (
-                  <div key={action} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 500 }}>{label}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{desc}</div>
-                    </div>
-                    <button
-                      onClick={() => window.confirm(`Are you sure you want to: ${label}?`)}
-                      style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger)', padding: '7px 16px', borderRadius: 8, fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif", flexShrink: 0 }}
-                    >
-                      {label}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DangerZone />
           )}
         </div>
       </div>

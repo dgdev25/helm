@@ -1,0 +1,24 @@
+import Fastify from 'fastify'
+import staticPlugin from '@fastify/static'
+import cors from '@fastify/cors'
+import { fileURLToPath } from 'url'
+import { join, dirname } from 'path'
+import 'dotenv/config'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const isDev = process.env.NODE_ENV !== 'production'
+
+const app = Fastify({ logger: true })
+
+await app.register(cors, { origin: isDev ? 'http://localhost:5173' : false })
+
+if (!isDev) {
+  await app.register(staticPlugin, {
+    root: join(__dirname, '../dist'),
+    prefix: '/'
+  })
+}
+
+app.get('/api/health', async () => ({ ok: true }))
+
+await app.listen({ port: Number(process.env.PORT) || 3000 })

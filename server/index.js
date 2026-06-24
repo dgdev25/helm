@@ -11,6 +11,7 @@ import projectRoutes from './routes/projects.js'
 import cratesRoutes from './routes/crates.js'
 import crateLinksRoutes from './routes/crateLinks.js'
 import reposRoutes from './routes/repos.js'
+import repoLinksRoutes from './routes/repoLinks.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = process.env.NODE_ENV !== 'production'
@@ -57,6 +58,7 @@ await app.register(projectRoutes)
 await app.register(cratesRoutes)
 await app.register(crateLinksRoutes)
 await app.register(reposRoutes)
+await app.register(repoLinksRoutes)
 
 // Bootstrapping: apply the full schema (all statements are IF NOT EXISTS / ON CONFLICT,
 // so this is idempotent and safe on every boot — including a fresh empty DB).

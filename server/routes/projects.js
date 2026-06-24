@@ -9,6 +9,16 @@ import { scanLocalDirs } from '../localscanner.js'
 import { generateSynopsis } from '../synopsis.js'
 import { runPrimer } from '../primer.js'
 
+// ponytail: global in-flight cap so /primer + /synopsis can't fork unbounded `claude` processes.
+// Raises 429 when full; raise AI_SLOTS if you genuinely need more parallelism.
+const AI_SLOTS = 2
+let aiActive = 0
+async function withAISlot(fn) {
+  if (aiActive >= AI_SLOTS) throw Object.assign(new Error('Too many AI requests running — try again shortly'), { statusCode: 429 })
+  aiActive++
+  try { return await fn() } finally { aiActive-- }
+}
+
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {
     try {
@@ -135,11 +145,11 @@ export default async function projectRoutes(app) {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
       if (!project) return reply.code(404).send({ error: 'Not found' })
       if (!project.local_path) return reply.code(422).send({ error: 'No local path — primer requires a local repo' })
-      const result = await runPrimer(project.local_path)
+      const result = await withAISlot(() => runPrimer(project.local_path))
       await sql`UPDATE projects SET primer_state = ${result.state}, updated_at = now() WHERE slug = ${project.slug}`
       return { data: result }
     } catch (err) {
-      return reply.code(500).send({ error: err.message })
+      return reply.code(err.statusCode || 500).send({ error: err.message })
     }
   })
 
@@ -147,12 +157,12 @@ export default async function projectRoutes(app) {
     try {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
       if (!project) return reply.code(404).send({ error: 'Not found' })
-      const synopsis = await generateSynopsis(project)
-      if (!synopsis) return reply.code(422).send({ error: 'Could not generate synopsis' })
+      const synopsis = await withAISlot(() => generateSynopsis(project))
+      if (!synopsis) return reply.code(422).send({ error: 'Could not generate synopsis — is the `claude` CLI installed and on PATH?' })
       await sql`UPDATE projects SET synopsis = ${synopsis}, updated_at = now() WHERE slug = ${project.slug}`
       return { data: { synopsis } }
     } catch (err) {
-      return reply.code(500).send({ error: err.message })
+      return reply.code(err.statusCode || 500).send({ error: err.message })
     }
   })
 

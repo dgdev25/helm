@@ -52,6 +52,12 @@ function runClaude(cwd, prompt) {
     proc.stdin.write(prompt)
     proc.stdin.end()
     const timer = setTimeout(() => { proc.kill(); reject(new Error('Primer timed out after 2 minutes')) }, 120000)
+    proc.on('error', e => {
+      clearTimeout(timer)
+      reject(new Error(e.code === 'ENOENT'
+        ? "`claude` CLI not found on PATH — install it to generate primers"
+        : `Failed to run claude: ${e.message}`))
+    })
     proc.on('close', code => {
       clearTimeout(timer)
       if (code === 0 || stdout) resolve(stdout.trim())

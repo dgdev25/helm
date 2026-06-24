@@ -149,13 +149,20 @@ export default function RelatedCrates({ slug }) {
 
       {links.length > 0 && (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+          <colgroup>
+            <col style={{ width: 180 }} />
+            <col style={{ width: 160 }} />
+            <col style={{ width: 120 }} />
+            <col />
+            <col style={{ width: 64 }} />
+          </colgroup>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
               <th style={TH}>Crate</th>
               <th style={TH}>Category</th>
-              <th style={{ ...TH, width: 110 }}>Relevance</th>
-              <th style={{ ...TH, width: 80 }}>Reason</th>
-              <th style={{ ...TH, width: 64 }}></th>
+              <th style={TH}>Relevance</th>
+              <th style={TH}>Reason</th>
+              <th style={TH}></th>
             </tr>
           </thead>
           {pinned.length > 0 && (
@@ -212,7 +219,7 @@ function CrateRow({ link, onPin, onRemove }) {
           ? <ScoreBar score={link.score} />
           : <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>—</span>}
       </td>
-      <td style={{ ...TD, fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: 240 }}>
+      <td style={{ ...TD, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
         <span title={link.reason} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {link.reason || '—'}
         </span>

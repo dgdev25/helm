@@ -8,6 +8,7 @@ import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
 import { generateSynopsis } from '../synopsis.js'
 import { runPrimer } from '../primer.js'
+import { launchCdp } from '../launcher.js'
 
 // ponytail: global in-flight cap so /primer + /synopsis can't fork unbounded `claude` processes.
 // Raises 429 when full; raise AI_SLOTS if you genuinely need more parallelism.
@@ -150,6 +151,18 @@ export default async function projectRoutes(app) {
       return { data: result }
     } catch (err) {
       return reply.code(err.statusCode || 500).send({ error: err.message })
+    }
+  })
+
+  app.post('/api/projects/:slug/launch', async (req, reply) => {
+    try {
+      const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+      if (!project.local_path) return reply.code(422).send({ error: 'No local path — launch requires a local repo' })
+      await launchCdp(project.local_path, project.name)
+      return { data: { launched: true } }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
     }
   })
 

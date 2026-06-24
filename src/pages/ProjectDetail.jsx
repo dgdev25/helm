@@ -148,6 +148,16 @@ export default function ProjectDetail() {
     }
   }
 
+  const handleLaunch = async () => {
+    try {
+      const res = await fetch(`/api/projects/${slug}/launch`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Launch failed')
+    } catch (e) {
+      setPrimerError(e.message)
+    }
+  }
+
   const handleDelete = async () => {
     if (!window.confirm(`Remove "${project.name}" from dashboard? This does not delete the actual repository.`)) return
     setDeleting(true)
@@ -263,6 +273,14 @@ export default function ProjectDetail() {
                     <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                       {new Date(primerUpdatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                     </span>
+                  )}
+                  {primer && p.local_path && (
+                    <button
+                      onClick={handleLaunch}
+                      style={{ background: 'var(--accent)', border: 'none', borderRadius: 6, padding: '3px 10px', fontSize: '0.72rem', color: '#000', cursor: 'pointer', fontWeight: 600, fontFamily: "'Space Grotesk',sans-serif" }}
+                    >
+                      ⚡ Launch
+                    </button>
                   )}
                   {primer && (
                     <button

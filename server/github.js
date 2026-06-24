@@ -12,7 +12,12 @@ export const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
 export function disambiguateSlug(baseSlug, identityKey, taken) {
   if (!taken[baseSlug] || taken[baseSlug] === identityKey) return baseSlug
   const owner = (identityKey.split('/')[0] || '').toLowerCase().replace(/[^a-z0-9-]/g, '-')
-  return `${baseSlug}-${owner}`.replace(/-+/g, '-').replace(/-+$/, '')
+  const candidate = `${baseSlug}-${owner}`.replace(/-+/g, '-').replace(/-+$/, '')
+  if (!taken[candidate] || taken[candidate] === identityKey) return candidate
+  // Edge case: owner-suffixed slug already taken by a third identity — append counter
+  let n = 2
+  while (taken[`${candidate}-${n}`] && taken[`${candidate}-${n}`] !== identityKey) n++
+  return `${candidate}-${n}`
 }
 
 export function repoToProject(repo) {

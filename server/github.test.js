@@ -32,5 +32,15 @@ describe('github sync', () => {
     assert.equal(disambiguateSlug('foo', 'alice/foo', { foo: 'alice/foo' }), 'foo')
     // different repo holding the slug -> owner appended
     assert.equal(disambiguateSlug('foo', 'bob/foo', { foo: 'alice/foo' }), 'foo-bob')
+    // foo-bob already taken by third party -> numeric suffix
+    assert.equal(
+      disambiguateSlug('foo', 'bob/foo', { foo: 'alice/foo', 'foo-bob': 'carol/foo-bob' }),
+      'foo-bob-2'
+    )
+    // counter increments past taken entries
+    assert.equal(
+      disambiguateSlug('foo', 'bob/foo', { foo: 'alice/foo', 'foo-bob': 'carol/foo-bob', 'foo-bob-2': 'dave/x' }),
+      'foo-bob-3'
+    )
   })
 })

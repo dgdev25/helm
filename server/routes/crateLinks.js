@@ -56,11 +56,11 @@ export default async function crateLinksRoutes(app) {
   // Manual link
   app.post('/api/projects/:slug/crates', async (req, reply) => {
     const { slug } = req.params
-    const { crate_id } = req.body || {}
-    if (!crate_id) return reply.code(422).send({ error: 'crate_id required' })
+    const crateId = parseInt(req.body?.crate_id, 10)
+    if (!Number.isInteger(crateId)) return reply.code(422).send({ error: 'crate_id must be an integer' })
     const [link] = await sql`
       INSERT INTO project_crate_links (project_slug, crate_id, score, source, pinned)
-      VALUES (${slug}, ${crate_id}, 1.0, 'manual', true)
+      VALUES (${slug}, ${crateId}, 1.0, 'manual', true)
       ON CONFLICT (project_slug, crate_id) DO UPDATE SET pinned = true, source = 'manual'
       RETURNING *
     `
@@ -69,14 +69,15 @@ export default async function crateLinksRoutes(app) {
 
   // Update link (pin/unpin, edit reason)
   app.patch('/api/projects/:slug/crates/:linkId', async (req, reply) => {
-    const { linkId } = req.params
+    const id = parseInt(req.params.linkId, 10)
+    if (!Number.isInteger(id)) return reply.code(422).send({ error: 'Invalid link id' })
     const { pinned, reason } = req.body || {}
     const updates = {}
     if (pinned !== undefined) updates.pinned = pinned
     if (reason !== undefined) updates.reason = reason
     if (!Object.keys(updates).length) return reply.code(422).send({ error: 'Nothing to update' })
     const [link] = await sql`
-      UPDATE project_crate_links SET ${sql(updates)} WHERE id = ${linkId} RETURNING *
+      UPDATE project_crate_links SET ${sql(updates)} WHERE id = ${id} RETURNING *
     `
     if (!link) return reply.code(404).send({ error: 'Link not found' })
     return { data: link }
@@ -84,8 +85,9 @@ export default async function crateLinksRoutes(app) {
 
   // Remove link
   app.delete('/api/projects/:slug/crates/:linkId', async (req, reply) => {
-    const { linkId } = req.params
-    const [row] = await sql`DELETE FROM project_crate_links WHERE id = ${linkId} RETURNING id`
+    const id = parseInt(req.params.linkId, 10)
+    if (!Number.isInteger(id)) return reply.code(422).send({ error: 'Invalid link id' })
+    const [row] = await sql`DELETE FROM project_crate_links WHERE id = ${id} RETURNING id`
     if (!row) return reply.code(404).send({ error: 'Link not found' })
     return { data: { deleted: row.id } }
   })

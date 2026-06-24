@@ -12,10 +12,10 @@ export async function scoreProjectCrates(project, crates) {
   ).join('\n')
 
   const projectContext = [
-    `Name: ${project.name}`,
+    `Name: <project-name>${(project.name || '').replace(/[<>]/g, '')}</project-name>`,
     `Language: ${project.language || 'unknown'}`,
     `Topics: ${(project.topics || []).join(', ') || 'none'}`,
-    `Description: ${project.description || ''}`,
+    `Description: <project-desc>${(project.description || '').replace(/[<>]/g, '')}</project-desc>`,
     project.primer_state
       ? `\nPrimer (truncated):\n${project.primer_state.slice(0, 3000)}`
       : '',

@@ -35,10 +35,15 @@ export default function RelatedCrates({ slug }) {
   const suggest = async () => {
     setSuggesting(true)
     setError(null)
-    const res = await fetch(`/api/projects/${slug}/suggest-crates`, { method: 'POST' }).then(r => r.json())
-    setSuggesting(false)
-    if (res.error) { setError(res.error); return }
-    await load()
+    try {
+      const res = await fetch(`/api/projects/${slug}/suggest-crates`, { method: 'POST' }).then(r => r.json())
+      if (res.error) { setError(res.error); return }
+      await load()
+    } catch (e) {
+      setError(e.message || 'Failed to get suggestions')
+    } finally {
+      setSuggesting(false)
+    }
   }
 
   const togglePin = async (link) => {

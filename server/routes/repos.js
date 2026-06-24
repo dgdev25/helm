@@ -34,7 +34,8 @@ async function fetchUserOrOrgRepos(owner) {
     for await (const page of octokit.paginate.iterator(octokit.rest.repos.listForUser, { username: owner, per_page: 100, type: 'owner' })) {
       all.push(...page.data)
     }
-  } catch {
+  } catch (e) {
+    if (e.status !== 404) throw e
     for await (const page of octokit.paginate.iterator(octokit.rest.repos.listForOrg, { org: owner, per_page: 100, type: 'public' })) {
       all.push(...page.data)
     }

@@ -52,12 +52,17 @@ export default function Repos() {
   }
 
   const toggleStar = async (repo) => {
-    await fetch(`/api/repos/${repo.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ starred: !repo.starred }),
-    })
     setRepos(rs => rs.map(r => r.id === repo.id ? { ...r, starred: !r.starred } : r))
+    try {
+      await fetch(`/api/repos/${repo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ starred: !repo.starred }),
+      })
+    } catch {
+      // revert on failure
+      setRepos(rs => rs.map(r => r.id === repo.id ? { ...r, starred: repo.starred } : r))
+    }
   }
 
   const languages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()

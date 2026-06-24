@@ -10,6 +10,7 @@ import Crates from './pages/Crates.jsx'
 import Repos from './pages/Repos.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
+import BulkPrimerBanner from './components/BulkPrimerBanner.jsx'
 import { useStore } from './store.js'
 
 // Apply saved preferences before first paint
@@ -36,6 +37,7 @@ export default function App() {
     <BrowserRouter>
       <ThemeToggle />
       <ChatPanel />
+      <BulkPrimerBanner />
       <Routes>
         <Route path="/" element={<Layout><Dashboard /></Layout>} />
         <Route path="/projects/:slug" element={<Layout><ProjectDetail /></Layout>} />

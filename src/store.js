@@ -25,6 +25,8 @@ export const useStore = create((set, get) => ({
 
   // bulkPrimer: null | { done, total, current, items: [{name,slug,status}] }
   bulkPrimer: null,
+  bulkPrimerCancelled: false,
+  cancelBulkPrimers: () => set({ bulkPrimerCancelled: true }),
 
   // chat panel
   chatProject: null, // { slug, name }
@@ -82,8 +84,9 @@ export const useStore = create((set, get) => ({
     const locals = get().projects.filter(p => p.local_path)
     if (!locals.length) return
     const items = locals.map(p => ({ name: p.name, slug: p.slug, status: 'pending' }))
-    set({ bulkPrimer: { done: 0, total: locals.length, current: null, items: [...items] } })
+    set({ bulkPrimerCancelled: false, bulkPrimer: { done: 0, total: locals.length, current: null, items: [...items] } })
     for (let i = 0; i < items.length; i++) {
+      if (get().bulkPrimerCancelled) break
       set(s => {
         const next = [...s.bulkPrimer.items]
         next[i] = { ...next[i], status: 'running' }
@@ -98,7 +101,7 @@ export const useStore = create((set, get) => ({
       })
     }
     await get().fetchProjects(get().filters)
-    set({ bulkPrimer: null })
+    set({ bulkPrimer: null, bulkPrimerCancelled: false })
   },
 
   triggerSync: async () => {

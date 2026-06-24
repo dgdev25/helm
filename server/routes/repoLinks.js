@@ -119,9 +119,15 @@ export default async function repoLinksRoutes(app) {
       INSERT INTO project_repo_links (project_slug, repo_id, score, source, pinned)
       VALUES (${slug}, ${repoId}, 1.0, 'manual', true)
       ON CONFLICT (project_slug, repo_id) DO UPDATE SET pinned = true, source = 'manual'
-      RETURNING *
+      RETURNING id
     `
-    return { data: link }
+    const [full] = await sql`
+      SELECT l.*, r.full_name, r.name, r.description, r.language, r.topics, r.stars, r.html_url
+      FROM project_repo_links l
+      JOIN repo_library r ON r.id = l.repo_id
+      WHERE l.id = ${link.id}
+    `
+    return { data: full }
   })
 
   // Update (pin/unpin, edit reason)

@@ -20,9 +20,9 @@ async function writePromptFile(localPath, prompt) {
   return file
 }
 
-function spawnTerminal(localPath, promptFile) {
+function spawnTerminal(localPath, promptFile, apiUrl, slug) {
   const os = platform()
-  const nodeCmd = `node "${CDP_SCRIPT}" "${promptFile}"`
+  const nodeCmd = `node "${CDP_SCRIPT}" "${promptFile}" "${apiUrl}" "${slug}"`
 
   if (os === 'darwin') {
     // osascript + Terminal.app — always available on macOS
@@ -60,12 +60,13 @@ function spawnTerminal(localPath, promptFile) {
   spawn(terminal.bin, terminal.args(cmd), { detached: true, stdio: 'ignore', env: process.env }).unref()
 }
 
-export async function launchCdp(localPath, projectName) {
+export async function launchCdp(localPath, projectName, slug) {
   const state = await readFile(join(localPath, '.primer', 'STATE.md'), 'utf8')
   const steps = extractNextSteps(state)
   if (!steps) throw new Error('No roadmap found in STATE.md — run Re-run primer first')
 
+  const apiUrl = `http://127.0.0.1:${process.env.PORT ?? process.env.BACKEND_PORT ?? '47821'}`
   const prompt = `You are working on the ${projectName} project at ${localPath}.\n\nHere are the next steps from the project primer:\n\n${steps}\n\nPlease work through these steps.`
   const promptFile = await writePromptFile(localPath, prompt)
-  spawnTerminal(localPath, promptFile)
+  spawnTerminal(localPath, promptFile, apiUrl, slug)
 }

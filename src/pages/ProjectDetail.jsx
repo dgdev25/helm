@@ -153,6 +153,21 @@ export default function ProjectDetail() {
       const res = await fetch(`/api/projects/${slug}/launch`, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Launch failed')
+
+      // Poll until primer_updated_at changes (session finished + primer re-ran), max 20 min
+      const baseline = primerUpdatedAt
+      const deadline = Date.now() + 20 * 60 * 1000
+      const poll = setInterval(async () => {
+        if (Date.now() > deadline) { clearInterval(poll); return }
+        try {
+          const p = await fetchProject(slug)
+          if (p.primer_updated_at && p.primer_updated_at !== baseline) {
+            setPrimer(p.primer_state)
+            setPrimerUpdatedAt(p.primer_updated_at)
+            clearInterval(poll)
+          }
+        } catch {}
+      }, 5000)
     } catch (e) {
       setPrimerError(e.message)
     }

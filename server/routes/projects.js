@@ -159,7 +159,7 @@ export default async function projectRoutes(app) {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
       if (!project) return reply.code(404).send({ error: 'Not found' })
       if (!project.local_path) return reply.code(422).send({ error: 'No local path — launch requires a local repo' })
-      await launchCdp(project.local_path, project.name)
+      await launchCdp(project.local_path, project.name, project.slug)
       return { data: { launched: true } }
     } catch (err) {
       return reply.code(500).send({ error: err.message })

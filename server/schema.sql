@@ -67,3 +67,19 @@ CREATE TABLE IF NOT EXISTS crate_library (
 CREATE INDEX IF NOT EXISTS idx_crate_library_category ON crate_library (category);
 CREATE INDEX IF NOT EXISTS idx_crate_library_starred ON crate_library (starred);
 INSERT INTO settings (key, value) VALUES ('app_name', 'Helm') ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS project_crate_links (
+  id           SERIAL PRIMARY KEY,
+  project_slug TEXT NOT NULL REFERENCES projects(slug) ON DELETE CASCADE,
+  crate_id     INTEGER NOT NULL REFERENCES crate_library(id) ON DELETE CASCADE,
+  score        REAL DEFAULT 0,
+  reason       TEXT DEFAULT '',
+  source       TEXT DEFAULT 'ai' CHECK (source IN ('ai', 'manual')),
+  pinned       BOOLEAN DEFAULT false,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (project_slug, crate_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pcl_project ON project_crate_links (project_slug);
+CREATE INDEX IF NOT EXISTS idx_pcl_crate   ON project_crate_links (crate_id);
+CREATE INDEX IF NOT EXISTS idx_pcl_score   ON project_crate_links (project_slug, score DESC);

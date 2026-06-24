@@ -45,4 +45,6 @@ await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS primer_state TEXT`.catch
 
 startScheduler()
 
-await app.listen({ port: Number(process.env.PORT ?? process.env.BACKEND_PORT ?? '47821') })
+// ponytail: bind localhost by default — this app has no auth and exposes destructive/subprocess endpoints.
+// Set HOST=0.0.0.0 (plus auth) only if you intentionally deploy it remotely.
+await app.listen({ port: Number(process.env.PORT ?? process.env.BACKEND_PORT ?? '47821'), host: process.env.HOST ?? '127.0.0.1' })

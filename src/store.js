@@ -14,7 +14,7 @@ export const useStore = create((set, get) => ({
   loading: false,
   error: null,
   filters: { search: '', status: '', language: '', topic: '' },
-  appName: localStorage.getItem('ds-app-name') || 'Starmap',
+  appName: localStorage.getItem('ds-app-name') || 'Helm',
   setAppName: (name) => {
     localStorage.setItem('ds-app-name', name)
     document.title = `${name} — Project Dashboard`

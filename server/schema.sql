@@ -66,4 +66,4 @@ CREATE TABLE IF NOT EXISTS crate_library (
 
 CREATE INDEX IF NOT EXISTS idx_crate_library_category ON crate_library (category);
 CREATE INDEX IF NOT EXISTS idx_crate_library_starred ON crate_library (starred);
-INSERT INTO settings (key, value) VALUES ('app_name', 'Starmap') ON CONFLICT DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('app_name', 'Helm') ON CONFLICT DO NOTHING;

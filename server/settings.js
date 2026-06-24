@@ -9,7 +9,7 @@ const DEFAULTS = {
   local_scan_dirs: process.env.LOCAL_SCAN_DIRS || '',
   github_usernames: process.env.GITHUB_USERNAMES || '',
   sync_interval_hours: process.env.SYNC_INTERVAL_HOURS || '6',
-  app_name: 'Starmap',
+  app_name: 'Helm',
 }
 
 export async function getSettings() {

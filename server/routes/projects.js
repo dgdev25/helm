@@ -1,6 +1,8 @@
 // server/routes/projects.js
-import { execFile } from 'child_process'
+import { execFile, spawn } from 'child_process'
 import { promisify } from 'util'
+import { readFile, access } from 'fs/promises'
+import { join } from 'path'
 import sql from '../db.js'
 
 const execFileAsync = promisify(execFile)
@@ -191,6 +193,85 @@ export default async function projectRoutes(app) {
         } catch {}
       }
     })()
+  })
+
+  // SSE chat endpoint — streams claude responses with project context
+  app.post('/api/projects/:slug/chat', async (req, reply) => {
+    const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+    if (!project) return reply.code(404).send({ error: 'Not found' })
+
+    const { messages = [] } = req.body
+
+    // Build context: primer state > README > metadata
+    const metaParts = [
+      `Project: ${project.name}`,
+      project.description && `Description: ${project.description}`,
+      project.synopsis && `Synopsis: ${project.synopsis}`,
+      project.language && `Language: ${project.language}`,
+      project.topics?.length && `Topics: ${project.topics.join(', ')}`,
+      project.last_commit_msg && `Last commit: "${project.last_commit_msg}" by ${project.last_commit_author || 'unknown'}`,
+      project.github_url && `GitHub: ${project.github_url}`,
+    ].filter(Boolean).join('\n')
+
+    let repoContext = ''
+    if (project.local_path) {
+      const exists = await access(project.local_path).then(() => true).catch(() => false)
+      if (exists) {
+        // Primer state is richest — prefer it
+        try {
+          repoContext = await readFile(join(project.local_path, '.primer/STATE.md'), 'utf8')
+          repoContext = repoContext.slice(0, 4000)
+        } catch {
+          // Fall back to README
+          for (const name of ['README.md', 'readme.md', 'README.txt']) {
+            try {
+              repoContext = (await readFile(join(project.local_path, name), 'utf8')).slice(0, 3000)
+              break
+            } catch {}
+          }
+        }
+      }
+    }
+
+    const systemContext = `You are an expert assistant with deep knowledge of the following project. Answer questions accurately and concisely. You can help with code review, architecture decisions, debugging, planning, and anything project-related. Be direct — no filler.
+
+=== PROJECT METADATA ===
+${metaParts}
+${repoContext ? `\n=== PROJECT STATE ===\n${repoContext}` : ''}`
+
+    // Build conversation prompt
+    const history = messages.map(m =>
+      `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`
+    ).join('\n\n')
+
+    const prompt = `${systemContext}\n\n---\n\n${history}\n\nAssistant:`
+
+    // SSE streaming response
+    reply.raw.setHeader('Content-Type', 'text/event-stream')
+    reply.raw.setHeader('Cache-Control', 'no-cache')
+    reply.raw.setHeader('Connection', 'keep-alive')
+    reply.raw.flushHeaders()
+
+    const proc = spawn('claude', ['-p', prompt], { encoding: 'utf8' })
+
+    const send = (obj) => {
+      if (!reply.raw.writableEnded) reply.raw.write(`data: ${JSON.stringify(obj)}\n\n`)
+    }
+
+    proc.stdout.on('data', chunk => send({ text: chunk.toString() }))
+    proc.stderr.on('data', chunk => console.error('[chat]', chunk.toString().trim()))
+    proc.on('close', () => {
+      if (!reply.raw.writableEnded) {
+        reply.raw.write('data: [DONE]\n\n')
+        reply.raw.end()
+      }
+    })
+    proc.on('error', err => {
+      send({ error: err.message })
+      if (!reply.raw.writableEnded) { reply.raw.write('data: [DONE]\n\n'); reply.raw.end() }
+    })
+
+    req.raw.on('close', () => proc.kill())
   })
 
   app.post('/api/projects/:slug/primer', async (req, reply) => {

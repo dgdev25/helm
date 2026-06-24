@@ -18,6 +18,11 @@ export const useStore = create((set, get) => ({
   // bulkPrimer: null | { done, total, current, items: [{name,slug,status}] }
   bulkPrimer: null,
 
+  // chat panel
+  chatProject: null, // { slug, name }
+  openChat: (project) => set({ chatProject: { slug: project.slug, name: project.name } }),
+  closeChat: () => set({ chatProject: null }),
+
   setFilter: (key, value) => {
     const updated = { ...get().filters, [key]: value }
     set({ filters: updated })

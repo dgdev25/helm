@@ -4,9 +4,11 @@ import { formatDistanceToNow } from '../utils/time.js'
 import { safeHref } from '../utils/safeHref.js'
 import StatusPill from './StatusPill.jsx'
 import TopicChip from './TopicChip.jsx'
+import { useStore } from '../store.js'
 
 export default function ProjectCard({ project, skeleton }) {
   const navigate = useNavigate()
+  const openChat = useStore(s => s.openChat)
   const [synopsis, setSynopsis] = useState(project?.synopsis || null)
   const [generating, setGenerating] = useState(false)
 
@@ -37,7 +39,11 @@ export default function ProjectCard({ project, skeleton }) {
     slug, name, description, language, topics = [], stars = 0,
     open_issues = 0, last_commit_at, last_commit_msg,
     last_commit_author, status, github_url, is_private, local_path,
+    primer_updated_at,
   } = project
+
+  const primerStale = local_path && last_commit_at && primer_updated_at &&
+    (new Date(last_commit_at) - new Date(primer_updated_at)) > 7 * 24 * 60 * 60 * 1000
 
   return (
     <div
@@ -63,6 +69,11 @@ export default function ProjectCard({ project, skeleton }) {
                 private
               </span>
             )}
+            {primerStale && (
+              <span title="Primer is stale — commits have landed since last primer run" style={{ fontSize: '0.62rem', padding: '1px 6px', borderRadius: 9999, background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.3)', color: '#fb923c', flexShrink: 0 }}>
+                primer stale
+              </span>
+            )}
           </div>
           {description && (
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -70,7 +81,23 @@ export default function ProjectCard({ project, skeleton }) {
             </p>
           )}
         </div>
-        <StatusPill status={status || 'active'} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={e => { e.stopPropagation(); openChat(project) }}
+            title="Chat about this project"
+            style={{
+              background: 'none', border: '1px solid var(--surface-border)',
+              borderRadius: 6, padding: '2px 7px', fontSize: '0.68rem',
+              color: 'var(--text-dim)', cursor: 'pointer', lineHeight: 1.6,
+              transition: 'var(--fast)',
+            }}
+            onMouseEnter={e => { e.target.style.borderColor = 'rgba(34,153,113,0.4)'; e.target.style.color = 'var(--primary)' }}
+            onMouseLeave={e => { e.target.style.borderColor = 'var(--surface-border)'; e.target.style.color = 'var(--text-dim)' }}
+          >
+            ✦ Chat
+          </button>
+          <StatusPill status={status || 'active'} />
+        </div>
       </div>
 
       {/* Synopsis */}

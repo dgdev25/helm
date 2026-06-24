@@ -7,6 +7,7 @@ import Analytics from './pages/Analytics.jsx'
 import Settings from './pages/Settings.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
+import ChatPanel from './components/ChatPanel.jsx'
 import { useStore } from './store.js'
 
 // Apply saved preferences before first paint
@@ -22,6 +23,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeToggle />
+      <ChatPanel />
       <Routes>
         <Route path="/" element={<Layout><Dashboard /></Layout>} />
         <Route path="/projects/:slug" element={<Layout><ProjectDetail /></Layout>} />

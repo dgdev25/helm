@@ -19,6 +19,7 @@ export default function Repos() {
   const [importResult, setImportResult] = useState(null)
   const [search, setSearch]       = useState('')
   const [langFilter, setLangFilter] = useState('')
+  const [editNotes, setEditNotes] = useState(null) // { id, notes }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,9 +66,30 @@ export default function Repos() {
         body: JSON.stringify({ starred: !repo.starred }),
       })
     } catch {
-      // revert on failure
       setRepos(rs => rs.map(r => r.id === repo.id ? { ...r, starred: repo.starred } : r))
     }
+  }
+
+  const deleteRepo = async (repo) => {
+    setRepos(rs => rs.filter(r => r.id !== repo.id))
+    try {
+      await fetch(`/api/repos/${repo.id}`, { method: 'DELETE' })
+    } catch {
+      setRepos(rs => [...rs, repo])
+    }
+  }
+
+  const saveNotes = async () => {
+    if (!editNotes) return
+    try {
+      await fetch(`/api/repos/${editNotes.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: editNotes.notes }),
+      })
+      setRepos(rs => rs.map(r => r.id === editNotes.id ? { ...r, notes: editNotes.notes } : r))
+    } catch {}
+    setEditNotes(null)
   }
 
   const languages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()
@@ -124,17 +146,43 @@ export default function Repos() {
           </span>
         </div>
 
+        {/* Notes editor */}
+        {editNotes && (
+          <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8 }}>
+            <textarea
+              autoFocus
+              value={editNotes.notes}
+              onChange={e => setEditNotes(n => ({ ...n, notes: e.target.value }))}
+              rows={3}
+              style={{ width: '100%', fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--text)', resize: 'vertical', outline: 'none', fontFamily: 'inherit' }}
+              placeholder="Add notes…"
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button onClick={saveNotes} style={{ padding: '4px 12px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer' }}>Save</button>
+              <button onClick={() => setEditNotes(null)} style={{ padding: '4px 12px', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 6, fontSize: '0.78rem', cursor: 'pointer', color: 'var(--text-muted)' }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
         {/* Table */}
         {loading
           ? <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>Loading…</div>
+          : repos.length === 0
+          ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: 12 }}>⎇</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: 6 }}>No repos yet</div>
+              <div style={{ fontSize: '0.8rem' }}>Import from a GitHub user, org, or topic URL above.</div>
+            </div>
+          )
           : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <colgroup>
-                <col style={{ width: 260 }} />
+                <col style={{ width: 240 }} />
                 <col style={{ width: 100 }} />
                 <col style={{ width: 70 }} />
                 <col />
-                <col style={{ width: 48 }} />
+                <col style={{ width: 80 }} />
               </colgroup>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
@@ -158,6 +206,9 @@ export default function Repos() {
                             {r.project_count} project{r.project_count > 1 ? 's' : ''}
                           </span>
                         )}
+                        {r.notes && (
+                          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{r.notes}</div>
+                        )}
                       </td>
                       <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
                         {r.language && (
@@ -172,12 +223,27 @@ export default function Repos() {
                       <td style={{ padding: '8px 10px', verticalAlign: 'middle', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                         {r.description}
                       </td>
-                      <td style={{ padding: '8px 10px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px 10px', verticalAlign: 'middle', display: 'flex', gap: 4 }}>
                         <button
                           onClick={() => toggleStar(r)}
+                          title={r.starred ? 'Unstar' : 'Star'}
                           style={{ background: 'none', border: 'none', fontSize: '0.9rem', cursor: 'pointer', color: r.starred ? '#fbbf24' : 'var(--text-dim)' }}
                         >
                           {r.starred ? '★' : '☆'}
+                        </button>
+                        <button
+                          onClick={() => setEditNotes({ id: r.id, notes: r.notes || '' })}
+                          title="Edit notes"
+                          style={{ background: 'none', border: 'none', fontSize: '0.82rem', cursor: 'pointer', color: r.notes ? 'var(--primary)' : 'var(--text-dim)' }}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => deleteRepo(r)}
+                          title="Remove from library"
+                          style={{ background: 'none', border: 'none', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text-dim)' }}
+                        >
+                          ✕
                         </button>
                       </td>
                     </tr>

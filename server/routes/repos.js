@@ -79,8 +79,10 @@ export default async function reposRoutes(app) {
     const topicMatch = url.match(/github\.com\/topics\/([^/?#\s]+)/)
 
     if (topicMatch) {
+      const topic = topicMatch[1]
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(topic)) return reply.code(422).send({ error: 'Invalid topic name — must be lowercase alphanumeric with hyphens only' })
       const { data } = await octokit.rest.search.repos({
-        q: `topic:${topicMatch[1]}`,
+        q: `topic:${topic}`,
         sort: 'stars',
         per_page: 100,
       })

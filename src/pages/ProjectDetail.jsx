@@ -103,6 +103,7 @@ export default function ProjectDetail({ initialTab }) {
   useEffect(() => { return () => clearInterval(launchPollRef.current) }, [])
 
   useEffect(() => {
+    setActiveTab(initialTab || 'Overview')
     setLoading(true)
     setError(null)
     setStatusVal('')

@@ -192,7 +192,10 @@ export default function Dashboard() {
           {displayed.map(p => (
             <div
               key={p.slug || p.name}
+              role="button"
+              tabIndex={0}
               onClick={() => navigate(`/projects/${p.slug}`)}
+              onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && navigate(`/projects/${p.slug}`)}
               className="glass animate-in"
               style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 80px 70px 110px 80px', gap: 12, padding: '10px 14px', alignItems: 'center', cursor: 'pointer', borderRadius: 10, transition: 'var(--fast)' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,153,113,0.3)'}

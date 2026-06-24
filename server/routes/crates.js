@@ -72,13 +72,14 @@ async function fetchCratesIoUser(username) {
 async function fetchCratesIoByUser(userId) {
   const all = []
   let page = 1
-  while (true) {
+  const MAX_PAGES = 50
+  while (page <= MAX_PAGES) {
     const res = await fetch(
       `https://crates.io/api/v1/crates?user_id=${userId}&per_page=100&page=${page}`,
       { headers: { 'User-Agent': CRATES_IO_UA } }
     ).then(r => r.json())
     all.push(...(res.crates || []))
-    if (all.length >= res.meta.total || !res.crates?.length) break
+    if (!res.crates?.length || all.length >= (res.meta?.total ?? Infinity)) break
     page++
   }
   return all

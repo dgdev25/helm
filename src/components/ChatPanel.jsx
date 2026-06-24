@@ -37,8 +37,8 @@ export default function ChatPanel() {
     if (!text || streaming) return
     setInput('')
 
-    const next = [...messages, { role: 'user', content: text }]
-    setMessages([...next, { role: 'assistant', content: '', streaming: true }])
+    const next = [...messages, { role: 'user', content: text, id: `u-${Date.now()}` }]
+    setMessages([...next, { role: 'assistant', content: '', streaming: true, id: `a-${Date.now()}` }])
     setStreaming(true)
 
     const ctrl = new AbortController()
@@ -205,7 +205,7 @@ export default function ChatPanel() {
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div key={msg.id || i} style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
               <div style={{
                 maxWidth: '88%',
                 background: msg.role === 'user' ? 'var(--primary-glow)' : 'var(--surface)',

@@ -35,22 +35,33 @@ export default function Crates() {
 
   const localProjects = projects.filter(p => p.local_path)
 
+  const [loadError, setLoadError] = useState(null)
+
   const load = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (category !== 'All') params.set('category', category)
-    if (starred) params.set('starred', 'true')
-    const res = await fetch(`/api/crates?${params}`).then(r => r.json())
-    setCrates(res.data || [])
-    setLoading(false)
+    setLoadError(null)
+    try {
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      if (category !== 'All') params.set('category', category)
+      if (starred) params.set('starred', 'true')
+      const res = await fetch(`/api/crates?${params}`).then(r => r.json())
+      setCrates(res.data || [])
+    } catch (e) {
+      setLoadError(e.message)
+      setCrates([])
+    } finally {
+      setLoading(false)
+    }
   }, [search, category, starred])
 
   useEffect(() => { load() }, [load])
 
   const scan = async () => {
     setScanning(true)
-    const res = await fetch('/api/crates/scan', { method: 'POST' }).then(r => r.json())
+    try {
+      await fetch('/api/crates/scan', { method: 'POST' }).then(r => r.json())
+    } catch {}
     setScanning(false)
     await load()
     return res.data
@@ -208,6 +219,8 @@ export default function Crates() {
           {copyTarget && <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>then click ↓ on any crate</span>}
         </div>
       )}
+
+      {loadError && <div style={{ color: 'var(--danger)', fontSize: '0.8rem', margin: '12px 0' }}>Failed to load crates: {loadError}</div>}
 
       {/* Empty state */}
       {!loading && crates.length === 0 && (

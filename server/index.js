@@ -35,6 +35,7 @@ app.get('/api/settings', async () => {
       githubUsernames:  s.github_usernames,
       githubToken:      process.env.GITHUB_TOKEN ? '••••••••' + process.env.GITHUB_TOKEN.slice(-4) : '',
       syncIntervalHours: s.sync_interval_hours,
+      appName:          s.app_name,
     }
   }
 })
@@ -45,6 +46,7 @@ app.patch('/api/settings', async (req, reply) => {
     ...(b.localScanDirs != null && { local_scan_dirs: Array.isArray(b.localScanDirs) ? b.localScanDirs.join(',') : b.localScanDirs }),
     ...(b.githubUsernames != null && { github_usernames: b.githubUsernames }),
     ...(b.syncIntervalHours != null && { sync_interval_hours: String(b.syncIntervalHours) }),
+    ...(b.app_name != null && { app_name: b.app_name }),
   })
   return { data: { ok: true } }
 })

@@ -14,6 +14,12 @@ export const useStore = create((set, get) => ({
   loading: false,
   error: null,
   filters: { search: '', status: '', language: '', topic: '' },
+  appName: localStorage.getItem('ds-app-name') || 'Starmap',
+  setAppName: (name) => {
+    localStorage.setItem('ds-app-name', name)
+    document.title = `${name} — Project Dashboard`
+    set({ appName: name })
+  },
 
   // bulkPrimer: null | { done, total, current, items: [{name,slug,status}] }
   bulkPrimer: null,

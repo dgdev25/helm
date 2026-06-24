@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useStore } from '../store.js'
 import DirList from '../components/DirList.jsx'
 import SecretInput from '../components/SecretInput.jsx'
 import ToggleSwitch from '../components/ToggleSwitch.jsx'
 
-const SECTIONS = ['Local Directories', 'GitHub', 'Sync Schedule', 'Display', 'Danger Zone']
+const SECTIONS = ['Local Directories', 'GitHub', 'Sync Schedule', 'Sync Log', 'Display', 'Danger Zone']
 
 const input = (val, set, opts = {}) => (
   <input
@@ -102,7 +103,33 @@ function DangerZone() {
   )
 }
 
+function SyncLog() {
+  const [log, setLog] = useState(null)
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    fetch('/api/sync/log').then(r => r.json()).then(j => setLog(j.data || [])).catch(() => setLog([])).finally(() => setLoading(false))
+  }, [])
+  const statusColor = s => s === 'success' ? 'var(--primary)' : s === 'error' ? 'var(--danger)' : 'var(--text-muted)'
+  return (
+    <SectionCard title="Sync Log" desc="Last 20 sync events.">
+      {loading && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Loading…</div>}
+      {!loading && log?.length === 0 && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No sync events yet.</div>}
+      {log?.map((entry, i) => (
+        <div key={i} style={{ display: 'flex', gap: 12, fontSize: '0.78rem', paddingBottom: 10, borderBottom: i < log.length - 1 ? '1px solid var(--surface-border)' : 'none' }}>
+          <span style={{ color: statusColor(entry.status), fontWeight: 600, flexShrink: 0 }}>{entry.status}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: 'var(--text-muted)' }}>{entry.message}</div>
+            {entry.projects_updated > 0 && <div style={{ color: 'var(--text-dim)', fontSize: '0.7rem' }}>{entry.projects_updated} projects updated</div>}
+          </div>
+          <span style={{ color: 'var(--text-dim)', fontSize: '0.7rem', flexShrink: 0 }}>{new Date(entry.synced_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}</span>
+        </div>
+      ))}
+    </SectionCard>
+  )
+}
+
 export default function Settings() {
+  const setAppName = useStore(s => s.setAppName)
   const [activeSection, setActiveSection] = useState(SECTIONS[0])
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
@@ -114,6 +141,7 @@ export default function Settings() {
   const [syncHours, setSyncHours] = useState(6)
   const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('ds-theme') || 'dark') !== 'light')
   const [compactCards, setCompactCards] = useState(() => document.documentElement.dataset.compact === 'true')
+  const [appName, setAppNameLocal] = useState(() => localStorage.getItem('ds-app-name') || 'Starmap')
 
   const handleDarkMode = (val) => {
     setDarkMode(val)
@@ -221,12 +249,24 @@ export default function Settings() {
             </SectionCard>
           )}
 
+          {/* Sync Log */}
+          {activeSection === 'Sync Log' && <SyncLog />}
+
           {/* Display */}
           {activeSection === 'Display' && (
             <SectionCard title="Display" desc="Visual preferences.">
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 500, display: 'block', marginBottom: 6 }}>App Name</label>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 8 }}>Shown in the sidebar and browser tab. Choose something that won't raise copyright flags if you go public.</p>
+                {input(appName, setAppNameLocal, { placeholder: 'e.g. Starmap' })}
+              </div>
               <ToggleSwitch checked={darkMode} onChange={handleDarkMode} label="Dark Mode" description="Use dark background and light text." />
               <ToggleSwitch checked={compactCards} onChange={handleCompact} label="Compact Cards" description="Reduce card padding for denser grid." />
-              <SaveButton onClick={() => saveSection('display', { darkMode, compactCards })} saving={saving.display} saved={saved.display} />
+              <SaveButton onClick={async () => {
+                setAppName(appName)
+                await fetch('/api/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ app_name: appName }) })
+                saveSection('display', { darkMode, compactCards })
+              }} saving={saving.display} saved={saved.display} />
             </SectionCard>
           )}
 

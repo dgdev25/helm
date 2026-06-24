@@ -16,7 +16,7 @@ const BOTTOM_NAV = [
 ]
 
 export default function Sidebar() {
-  const { filters, setFilters, triggerSync, loading, projects } = useStore()
+  const { filters, setFilters, triggerSync, loading, projects, appName } = useStore()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -51,7 +51,7 @@ export default function Sidebar() {
       {/* Brand */}
       <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--surface-border)' }}>
         <h1 style={{ fontSize: '1rem', fontWeight: 700, background: 'var(--gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-          Deathstar
+          {appName}
         </h1>
         <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>Project Dashboard</p>
       </div>

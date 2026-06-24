@@ -18,8 +18,18 @@ const compact = localStorage.getItem('ds-compact')
 if (compact) document.documentElement.dataset.compact = compact
 
 export default function App() {
-  const { fetchProjects } = useStore()
-  useEffect(() => { fetchProjects() }, [])
+  const { fetchProjects, appName, setAppName } = useStore()
+  useEffect(() => {
+    fetchProjects()
+    // Sync app name from server on load
+    fetch('/api/settings').then(r => r.json()).then(j => {
+      if (j.data?.appName) setAppName(j.data.appName)
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    document.title = `${appName} — Project Dashboard`
+  }, [appName])
 
   return (
     <BrowserRouter>

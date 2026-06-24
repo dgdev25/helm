@@ -79,7 +79,7 @@ async function fetchProject(slug) {
 export default function ProjectDetail({ initialTab }) {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { patchProject, projects } = useStore()
+  const { patchProject, projects, openChat } = useStore()
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
 
@@ -542,6 +542,22 @@ export default function ProjectDetail({ initialTab }) {
           </div>
         </div>
       </div>}
+
+      {/* Floating chat bubble */}
+      {project && (
+        <button
+          onClick={() => openChat(project)}
+          title={`Chat about ${project.name}`}
+          style={{
+            position: 'fixed', bottom: 28, right: 28, zIndex: 40,
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'var(--gradient-btn)', border: '1px solid rgba(34,153,113,0.3)',
+            color: '#fff', fontSize: '1.2rem', cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(34,153,113,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >✦</button>
+      )}
     </div>
   )
 }

@@ -26,13 +26,13 @@ function spawnTerminal(localPath, promptFile, apiUrl, slug) {
 
   if (os === 'darwin') {
     // osascript + Terminal.app — always available on macOS
-    const script = `tell application "Terminal"\ndo script "cd '${localPath.replace(/'/g, "\\'")}' && ${nodeCmd}"\nactivate\nend tell`
+    const script = `tell application "Terminal"\ndo script "cd '${localPath.replace(/'/g, "'\\''")}' && ${nodeCmd}"\nactivate\nend tell`
     spawn('osascript', ['-e', script], { detached: true, stdio: 'ignore' }).unref()
     return
   }
 
   if (os === 'win32') {
-    const cmd = `cd /d "${localPath}" && ${nodeCmd}`
+    const cmd = `cd /d "${localPath.replace(/"/g, '\\"')}" && ${nodeCmd}`
     // Try Windows Terminal, fall back to a plain cmd window
     let wt = false
     try { execFileSync('where', ['wt'], { stdio: 'pipe' }); wt = true } catch {}

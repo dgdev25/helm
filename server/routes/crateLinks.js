@@ -76,8 +76,9 @@ export default async function crateLinksRoutes(app) {
     if (pinned !== undefined) updates.pinned = pinned
     if (reason !== undefined) updates.reason = reason
     if (!Object.keys(updates).length) return reply.code(422).send({ error: 'Nothing to update' })
+    const slug = req.params.slug
     const [link] = await sql`
-      UPDATE project_crate_links SET ${sql(updates)} WHERE id = ${id} RETURNING *
+      UPDATE project_crate_links SET ${sql(updates)} WHERE id = ${id} AND project_slug = ${slug} RETURNING *
     `
     if (!link) return reply.code(404).send({ error: 'Link not found' })
     return { data: link }
@@ -87,7 +88,8 @@ export default async function crateLinksRoutes(app) {
   app.delete('/api/projects/:slug/crates/:linkId', async (req, reply) => {
     const id = parseInt(req.params.linkId, 10)
     if (!Number.isInteger(id)) return reply.code(422).send({ error: 'Invalid link id' })
-    const [row] = await sql`DELETE FROM project_crate_links WHERE id = ${id} RETURNING id`
+    const slug = req.params.slug
+    const [row] = await sql`DELETE FROM project_crate_links WHERE id = ${id} AND project_slug = ${slug} RETURNING id`
     if (!row) return reply.code(404).send({ error: 'Link not found' })
     return { data: { deleted: row.id } }
   })

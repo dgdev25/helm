@@ -95,8 +95,19 @@ export default async function cratesRoutes(app) {
     if (starred === 'true') conditions.push(sql`starred = true`)
 
     const rows = conditions.length
-      ? await sql`SELECT * FROM crate_library WHERE ${conditions.reduce((a, b) => sql`${a} AND ${b}`)} ORDER BY starred DESC, name`
-      : await sql`SELECT * FROM crate_library ORDER BY starred DESC, name`
+      ? await sql`
+          SELECT c.*, COUNT(l.id)::int AS project_count
+          FROM crate_library c
+          LEFT JOIN project_crate_links l ON l.crate_id = c.id
+          WHERE ${conditions.reduce((a, b) => sql`${a} AND ${b}`)}
+          GROUP BY c.id
+          ORDER BY c.starred DESC, c.name`
+      : await sql`
+          SELECT c.*, COUNT(l.id)::int AS project_count
+          FROM crate_library c
+          LEFT JOIN project_crate_links l ON l.crate_id = c.id
+          GROUP BY c.id
+          ORDER BY c.starred DESC, c.name`
     return { data: rows }
   })
 

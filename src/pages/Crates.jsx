@@ -233,9 +233,19 @@ export default function Crates() {
                   <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)' }}>{c.name}</span>
                   {c.version && <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', flexShrink: 0 }}>v{c.version}</span>}
                 </div>
-                <span style={{ fontSize: '0.65rem', padding: '1px 7px', borderRadius: 9999, background: `${CAT_COLOR[c.category] || 'var(--text-muted)'}18`, border: `1px solid ${CAT_COLOR[c.category] || 'var(--surface-border)'}`, color: CAT_COLOR[c.category] || 'var(--text-dim)', marginTop: 4, display: 'inline-block' }}>
-                  {c.category}
-                </span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.65rem', padding: '1px 7px', borderRadius: 9999, background: `${CAT_COLOR[c.category] || 'var(--text-muted)'}18`, border: `1px solid ${CAT_COLOR[c.category] || 'var(--surface-border)'}`, color: CAT_COLOR[c.category] || 'var(--text-dim)', display: 'inline-block' }}>
+                    {c.category}
+                  </span>
+                  {c.project_count > 0 && (
+                    <span
+                      title={`Linked to ${c.project_count} project${c.project_count > 1 ? 's' : ''}`}
+                      style={{ fontSize: '0.63rem', background: 'rgba(34,153,113,0.12)', border: '1px solid rgba(34,153,113,0.25)', borderRadius: 9999, padding: '1px 7px', color: 'var(--primary)' }}
+                    >
+                      {c.project_count} project{c.project_count > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => toggle(c.id, 'starred', !c.starred)}

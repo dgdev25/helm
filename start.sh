@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # start.sh — deathstar development launcher
 #
-#   API server (Fastify, Node.js)   → http://localhost:47821
-#   Frontend dev server (Vite)      → http://localhost:47621
+#   API server (Fastify, Node.js)   → dynamic port (47800–47899)
+#   Frontend dev server (Vite)      → dynamic port (47600–47699)
 #
 # Usage:
 #   ./start.sh              # default dev mode
@@ -14,16 +14,22 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${SCRIPT_DIR}"
-
-# ── Ports — single source of truth ───────────────────────────────────────────
-BACKEND_PORT=47821
-FRONTEND_PORT=47621
-export BACKEND_PORT FRONTEND_PORT
-export BACKEND_URL="http://localhost:${BACKEND_PORT}"
-export FRONTEND_URL="http://localhost:${FRONTEND_PORT}"
-export PORT="${BACKEND_PORT}"
-
 LOG_DIR="${PROJECT_ROOT}/logs"
+
+# Must be defined before find_free_port and flag parsing use it
+die() { echo "[fail] ${*}" >&2; exit 1; }
+
+# ── Port allocation ───────────────────────────────────────────────────────────
+find_free_port() {
+  local start="${1}" end="${2}" port
+  for port in $(seq "${start}" "${end}"); do
+    if ! ss -tln 2>/dev/null | grep -q ":${port} " && \
+       ! lsof -i tcp:"${port}" &>/dev/null 2>&1; then
+      echo "${port}"; return 0
+    fi
+  done
+  die "No free port found in range ${start}–${end}"
+}
 
 # ── Flags ─────────────────────────────────────────────────────────────────────
 PROD_MODE=false
@@ -42,26 +48,7 @@ done
 info()   { echo "  ${*}"; }
 ok()     { echo "  [ok] ${*}"; }
 warn()   { echo "  [warn] ${*}"; }
-die()    { echo "[fail] ${*}" >&2; exit 1; }
 header() { echo; echo "── ${*}"; }
-
-kill_port() {
-  local port="${1}"
-  local pids
-  pids="$(lsof -ti tcp:"${port}" 2>/dev/null || true)"
-  if [[ -n "${pids}" ]]; then
-    kill ${pids} 2>/dev/null || true
-    local retries=10
-    while [[ ${retries} -gt 0 ]] && lsof -ti tcp:"${port}" &>/dev/null; do
-      sleep 0.3; retries=$((retries - 1))
-    done
-    pids="$(lsof -ti tcp:"${port}" 2>/dev/null || true)"
-    [[ -n "${pids}" ]] && { kill -9 ${pids} 2>/dev/null || true; sleep 0.2; }
-    ok "Stopped process on port ${port}"
-  else
-    info "Port ${port} was not in use"
-  fi
-}
 
 wait_for_http() {
   local url="${1}" label="${2}" log="${3:-}" timeout=30 elapsed=0
@@ -82,14 +69,14 @@ npm_needs_install() {
 # ── 1. Dependency checks ──────────────────────────────────────────────────────
 header "1. Checking dependencies"
 
-command -v node &>/dev/null  || die "node not found — install from https://nodejs.org"
+command -v node &>/dev/null || die "node not found — install from https://nodejs.org"
 ok "Node: $(node --version)"
 
-command -v npm &>/dev/null   || die "npm not found"
+command -v npm &>/dev/null || die "npm not found"
 ok "npm: $(npm --version)"
 
-command -v curl &>/dev/null  || die "curl not found — required for health checks"
-command -v lsof &>/dev/null  || warn "lsof not found — port cleanup disabled"
+command -v curl &>/dev/null || die "curl not found — required for health checks"
+command -v lsof &>/dev/null || warn "lsof not found — port cleanup disabled"
 
 if [[ ! -f "${PROJECT_ROOT}/.env" ]]; then
   if [[ -f "${PROJECT_ROOT}/.env.example" ]]; then
@@ -102,28 +89,36 @@ else
   ok ".env present"
 fi
 
-# Warn on obvious placeholders
 if grep -qE 'placeholder|changeme|your_token_here|user:password' "${PROJECT_ROOT}/.env" 2>/dev/null; then
   warn ".env contains placeholder values — update DATABASE_URL / GITHUB_TOKEN before syncing"
 fi
 
-# Load .env so PORT/DATABASE_URL etc. are available
 set -a; source "${PROJECT_ROOT}/.env"; set +a
-# Re-export ports so they override anything in .env
-export PORT="${BACKEND_PORT}" BACKEND_PORT FRONTEND_PORT
 
 # ── 2. Stop running services ──────────────────────────────────────────────────
+# Stop by process name — we don't know which dynamic ports were assigned last time
 header "2. Stopping services"
-if command -v lsof &>/dev/null; then
-  kill_port "${BACKEND_PORT}"
-  kill_port "${FRONTEND_PORT}"
+if pkill -f "node.*server/index.js" 2>/dev/null; then
+  ok "Stopped API server"
 else
-  pkill -f "server/index.js" 2>/dev/null || true
-  pkill -f "vite"            2>/dev/null || true
-  sleep 1
+  info "API server was not running"
 fi
+if pkill -f "[v]ite" 2>/dev/null; then
+  ok "Stopped Vite"
+else
+  info "Vite was not running"
+fi
+sleep 0.3
 
 [[ "${STOP_ONLY}" == true ]] && { echo; ok "All services stopped."; exit 0; }
+
+# ── Resolve ports (after stopping stale processes so ports are free) ──────────
+BACKEND_PORT="$(find_free_port 47800 47899)"
+FRONTEND_PORT="$(find_free_port 47600 47699)"
+export BACKEND_PORT FRONTEND_PORT PORT="${BACKEND_PORT}"
+export BACKEND_URL="http://localhost:${BACKEND_PORT}"
+export FRONTEND_URL="http://localhost:${FRONTEND_PORT}"
+info "Ports: backend=${BACKEND_PORT}  frontend=${FRONTEND_PORT}"
 
 # ── 3. Install / build ────────────────────────────────────────────────────────
 header "3. Installing dependencies"

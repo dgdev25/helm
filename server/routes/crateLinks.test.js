@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import sql from '../db.js'
 
 // Minimal smoke tests — hit the real DB (test data cleaned up after)
-const BASE = 'http://localhost:47621'
+const BASE = `http://localhost:${process.env.FRONTEND_PORT ?? '47621'}`
 const slug = '_test_project_crate_links'
 
 before(async () => {

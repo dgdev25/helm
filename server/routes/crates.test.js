@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import sql from '../db.js'
 
-const BASE = 'http://localhost:47621'
+const BASE = `http://localhost:${process.env.FRONTEND_PORT ?? '47621'}`
 let crateId
 
 before(async () => {

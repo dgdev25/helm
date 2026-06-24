@@ -5,7 +5,7 @@
 - **Purpose:** Dashboard for tracking GitHub repos and local git projects — AI synopses, primers, analytics, crate library, and context-aware project chat in one UI
 - **Stack:** Node.js (Fastify 5) + React 19 + PostgreSQL + Vite + Tailwind v4 + Zustand
 - **Dev loop:** `bash start.sh` (Fastify :47821, Vite :47621) · `node --test server/*.test.js server/routes/*.test.js`
-- **Last primed:** 2026-06-24 · HEAD `9e98235` on `main`
+- **Last primed:** 2026-06-24 · HEAD `ee78ab2` on `main`
 
 ## Structure  <!-- AUTO -->
 - `server/index.js` — Fastify bootstrap, boot-time local scan, scheduler start
@@ -21,18 +21,18 @@
 
 ## In flight  <!-- AUTO -->
 - `main` branch, clean working tree
-- Two untracked plan docs: `docs/superpowers/plans/2026-06-24-crate-project-relevance.md` and `...-github-repo-discovery.md` — commit or discard
+- Two untracked plan docs ready to execute: `docs/superpowers/plans/2026-06-24-crate-project-relevance.md` and `...-github-repo-discovery.md`
 
 ## Drift / distrust  <!-- AUTO -->
 - README references stale ports — actual ports are 47821 (API) and 47621 (Vite dev)
 - No other doc-vs-code contradictions found
 
 ## Roadmap — next steps  <!-- AUTO -->
-1. **Commit or discard untracked plan docs** — `git clean -f docs/superpowers/plans/` or `git add` them; eliminates `git status` noise — *trivial effort*
-2. **Auth layer** — server is localhost-only by design, but no enforcement; `HOST=0.0.0.0` would expose AI endpoints publicly — add token header check before any remote deploy — *medium effort, must-have before deployment*
-3. **README update** — ports and setup steps are stale — *trivial*
-4. **E2E test for chat + streaming SSE** — `ChatPanel → /chat → SSE` path is manual-only; no automated test — *medium effort, high value*
-5. **Per-minute AI rate limit** — `withAISlot` caps concurrency but not request rate; a script could queue 100 requests and burn API quota — *small effort*
+1. **Crate-project relevance** (`docs/superpowers/plans/2026-06-24-crate-project-relevance.md`) — AI suggestions + manual overrides cached in DB; mirrors crateLinks pattern — *medium effort, high value*
+2. **GitHub repo discovery** (`docs/superpowers/plans/2026-06-24-github-repo-discovery.md`) — URL import + AI auto-discovery, mirrors crate-project linking — *medium effort, high value*
+3. **Auth layer** — no token check on AI endpoints; must-have before any non-localhost deploy — *medium effort*
+4. **E2E test for chat + streaming SSE** — `ChatPanel → /chat → SSE` path is manual-only — *medium effort, high value*
+5. **Per-minute AI rate limit** — `withAISlot` caps concurrency but not request rate — *small effort*
 <!-- For the exhaustive prioritized worklist, run /audit. -->
 
 ## Locked decisions & invariants  <!-- AUTO -->
@@ -64,3 +64,4 @@
 - 2026-06-24 `ab1ae59` — bulk-primer fully shipped (3 commits); 4 modified frontend files remain uncommitted
 - 2026-06-24 `53b0bc6` — repo library fully shipped (10 commits): scorer, AI discoverer, link routes, star toggle, library page, RelatedRepos; 2 untracked plan docs pending review
 - 2026-06-24 `9e98235` — security audit remediation complete (9 commits, 26 items); Analytics charts, ChatPanel markdown, bulk primer banner, syncGitHub parallelised, 24 new route tests
+- 2026-06-24 `ee78ab2` — top-up prime; delta = ledger-only commit; 2 plan docs still untracked; next: crate-project relevance or github repo discovery

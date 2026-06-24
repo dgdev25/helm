@@ -45,3 +45,24 @@ INSERT INTO settings (key, value) VALUES
   ('sync_interval_hours', '6'),
   ('last_sync', '')
 ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS crate_library (
+  id          SERIAL PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  display_name TEXT,
+  version     TEXT,
+  description TEXT,
+  category    TEXT DEFAULT 'Uncategorized',
+  source_path TEXT,
+  crates_io_url TEXT,
+  docs_url    TEXT,
+  tags        TEXT[] DEFAULT '{}',
+  downloads   INTEGER DEFAULT 0,
+  starred     BOOLEAN DEFAULT false,
+  notes       TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_crate_library_category ON crate_library (category);
+CREATE INDEX IF NOT EXISTS idx_crate_library_starred ON crate_library (starred);

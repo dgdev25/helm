@@ -10,8 +10,9 @@ const NAV = [
 ]
 
 const BOTTOM_NAV = [
-  { label: 'Analytics', to: '/analytics', icon: '↑' },
-  { label: 'Settings',  to: '/settings',  icon: '⚙' },
+  { label: 'Analytics',     to: '/analytics', icon: '↑' },
+  { label: 'Crate Library', to: '/crates',    icon: '⬡' },
+  { label: 'Settings',      to: '/settings',  icon: '⚙' },
 ]
 
 export default function Sidebar() {

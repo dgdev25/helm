@@ -8,6 +8,7 @@ import sql from './db.js'
 import { startScheduler } from './sync.js'
 import { getSettings, setSettings } from './settings.js'
 import projectRoutes from './routes/projects.js'
+import cratesRoutes from './routes/crates.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = process.env.NODE_ENV !== 'production'
@@ -49,6 +50,7 @@ app.patch('/api/settings', async (req, reply) => {
 })
 
 await app.register(projectRoutes)
+await app.register(cratesRoutes)
 
 // Bootstrapping: apply the full schema (all statements are IF NOT EXISTS / ON CONFLICT,
 // so this is idempotent and safe on every boot — including a fresh empty DB).

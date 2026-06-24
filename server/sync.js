@@ -1,10 +1,11 @@
 // server/sync.js
 import { syncGitHub } from './github.js'
 import { scanLocalDirs } from './localscanner.js'
+import { getSetting } from './settings.js'
 import 'dotenv/config'
 
-export function startScheduler() {
-  const hours = Math.max(1, Number(process.env.SYNC_INTERVAL_HOURS) || 6)
+export async function startScheduler() {
+  const hours = Math.max(1, Number(await getSetting('sync_interval_hours')) || 6)
   const ms = hours * 60 * 60 * 1000
 
   const run = async () => {

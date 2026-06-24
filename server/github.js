@@ -1,6 +1,7 @@
 // server/github.js
 import { Octokit } from '@octokit/rest'
 import sql from './db.js'
+import { getSetting } from './settings.js'
 import 'dotenv/config'
 
 export const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
@@ -70,7 +71,7 @@ export async function syncOneRepo(fullName) {
 }
 
 export async function syncGitHub() {
-  const usernames = (process.env.GITHUB_USERNAMES || '').split(',').map(u => u.trim()).filter(Boolean)
+  const usernames = ((await getSetting('github_usernames')) || '').split(',').map(u => u.trim()).filter(Boolean)
   let updated = 0
 
   // Preload existing commit timestamps to skip unchanged repos (avoids N+1 API calls)

@@ -6,7 +6,7 @@ import { readdirSync, existsSync } from 'fs'
 const execFileAsync = promisify(execFile)
 import { join } from 'path'
 import sql from './db.js'
-import 'dotenv/config'
+import { getSetting } from './settings.js'
 
 export function parseGitLog(raw) {
   const [hash, message, author, dateStr] = raw.split('\x1f')
@@ -45,7 +45,7 @@ function getRepoName(repoPath) {
 }
 
 export async function scanLocalDirs() {
-  const dirs = (process.env.LOCAL_SCAN_DIRS || '').split(',').map(d => d.trim()).filter(Boolean)
+  const dirs = ((await getSetting('local_scan_dirs')) || '').split(',').map(d => d.trim()).filter(Boolean)
   let count = 0
 
   // Preload existing slug→local_path map to detect collisions

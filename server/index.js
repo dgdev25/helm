@@ -6,6 +6,7 @@ import { join, dirname } from 'path'
 import 'dotenv/config'
 import sql from './db.js'
 import { startScheduler } from './sync.js'
+import { getSettings, setSettings } from './settings.js'
 import projectRoutes from './routes/projects.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -25,23 +26,36 @@ if (!isDev) {
 
 app.get('/api/health', async () => ({ data: { ok: true } }))
 
-app.get('/api/settings', async () => ({
-  data: {
-    localScanDirs:    (process.env.LOCAL_SCAN_DIRS || '').split(',').filter(Boolean),
-    githubUsernames:  process.env.GITHUB_USERNAMES || '',
-    githubToken:      process.env.GITHUB_TOKEN ? '••••••••' + process.env.GITHUB_TOKEN.slice(-4) : '',
-    syncIntervalHours: process.env.SYNC_INTERVAL_HOURS || '6',
+app.get('/api/settings', async () => {
+  const s = await getSettings()
+  return {
+    data: {
+      localScanDirs:    s.local_scan_dirs.split(',').map(d => d.trim()).filter(Boolean),
+      githubUsernames:  s.github_usernames,
+      githubToken:      process.env.GITHUB_TOKEN ? '••••••••' + process.env.GITHUB_TOKEN.slice(-4) : '',
+      syncIntervalHours: s.sync_interval_hours,
+    }
   }
-}))
+})
 
-// ponytail: settings PATCH is a stub — wiring live env writes is out of scope
-app.patch('/api/settings', async () => ({ data: { ok: true } }))
+app.patch('/api/settings', async (req, reply) => {
+  const b = req.body || {}
+  await setSettings({
+    ...(b.localScanDirs != null && { local_scan_dirs: Array.isArray(b.localScanDirs) ? b.localScanDirs.join(',') : b.localScanDirs }),
+    ...(b.githubUsernames != null && { github_usernames: b.githubUsernames }),
+    ...(b.syncIntervalHours != null && { sync_interval_hours: String(b.syncIntervalHours) }),
+  })
+  return { data: { ok: true } }
+})
 
 await app.register(projectRoutes)
 
-// Migrate: add synopsis column if the DB predates it
-await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS synopsis TEXT`.catch(() => {})
-await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS primer_state TEXT`.catch(() => {})
+// Bootstrapping: apply the full schema (all statements are IF NOT EXISTS / ON CONFLICT,
+// so this is idempotent and safe on every boot — including a fresh empty DB).
+await sql.file(join(__dirname, 'schema.sql')).catch(err => {
+  app.log.error({ err }, 'schema bootstrap failed')
+  throw err
+})
 
 startScheduler()
 

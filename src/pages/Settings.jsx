@@ -191,8 +191,8 @@ export default function Settings() {
             <SectionCard title="GitHub" desc="Connect your GitHub account to sync repositories.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: '0.78rem', fontWeight: 500 }}>Personal Access Token</label>
-                <SecretInput value={token} onChange={setToken} placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Needs read:user and repo scopes.</span>
+                <SecretInput value={token} onChange={setToken} placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" readOnly />
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Read from <code>.env</code> (read-only here). Needs read:user and repo scopes; edit <code>.env</code> and restart to change.</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: '0.78rem', fontWeight: 500 }}>GitHub Usernames</label>

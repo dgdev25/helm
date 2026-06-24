@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store.js'
 import ProjectCard from '../components/ProjectCard.jsx'
 import StatCard from '../components/StatCard.jsx'
+import { formatDistanceToNow } from '../utils/time.js'
+import { safeHref } from '../utils/safeHref.js'
 
 const STATUS_CHIPS = [
   { label: 'All', value: '' },
@@ -12,10 +14,12 @@ const STATUS_CHIPS = [
 ]
 
 export default function Dashboard() {
-  const { projects, loading, error, filters, setFilter, setFilters, fetchProjects } = useStore()
+  const { projects, loading, error, filters, setFilter, setFilters, fetchProjects, openChat } = useStore()
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
   const didInit = useRef(false)
   const [staleFirst, setStaleFirst] = useState(false)
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('ds-view') || 'grid')
   const [addOpen, setAddOpen] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [addError, setAddError] = useState(null)
@@ -155,6 +159,14 @@ export default function Dashboard() {
         >
           {staleFirst ? '↑ Stale first' : '↓ Newest first'}
         </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+          {[['grid','▦'],['list','☰']].map(([mode, icon]) => (
+            <button key={mode} onClick={() => { setViewMode(mode); localStorage.setItem('ds-view', mode) }}
+              title={mode === 'grid' ? 'Card grid' : 'List view'}
+              style={{ background: viewMode === mode ? 'var(--primary-glow)' : 'var(--surface)', border: `1px solid ${viewMode === mode ? 'var(--primary)' : 'var(--surface-border)'}`, borderRadius: 8, padding: '4px 10px', fontSize: '0.9rem', color: viewMode === mode ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer', lineHeight: 1 }}
+            >{icon}</button>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -163,13 +175,47 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
-        {loading && !projects.length
-          ? Array.from({ length: 8 }).map((_, i) => <ProjectCard key={i} skeleton />)
-          : displayed.map(p => <ProjectCard key={p.slug || p.name} project={p} />)
-        }
-      </div>
+      {/* Grid / List */}
+      {viewMode === 'grid' ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
+          {loading && !projects.length
+            ? Array.from({ length: 8 }).map((_, i) => <ProjectCard key={i} skeleton />)
+            : displayed.map(p => <ProjectCard key={p.slug || p.name} project={p} />)
+          }
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* List header */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 80px 70px 110px 80px', gap: 12, padding: '6px 14px', fontSize: '0.68rem', color: 'var(--text-dim)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <span>Name</span><span>Description</span><span>Language</span><span>Stars</span><span>Last commit</span><span></span>
+          </div>
+          {displayed.map(p => (
+            <div
+              key={p.slug || p.name}
+              onClick={() => navigate(`/projects/${p.slug}`)}
+              className="glass animate-in"
+              style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 80px 70px 110px 80px', gap: 12, padding: '10px 14px', alignItems: 'center', cursor: 'pointer', borderRadius: 10, transition: 'var(--fast)' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(34,153,113,0.3)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--surface-border)'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: p.status === 'paused' ? '#fb923c' : p.status === 'archived' ? 'var(--text-dim)' : 'var(--primary)' }} />
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.description || '—'}</span>
+              <span style={{ fontSize: '0.72rem', color: '#93c5fd' }}>{p.language || '—'}</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.stars > 0 ? `★ ${p.stars}` : '—'}</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{p.last_commit_at ? formatDistanceToNow(p.last_commit_at) : '—'}</span>
+              <button
+                onClick={e => { e.stopPropagation(); openChat(p) }}
+                style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: 6, padding: '3px 8px', fontSize: '0.68rem', color: 'var(--text-dim)', cursor: 'pointer' }}
+                onMouseEnter={e => { e.target.style.borderColor = 'rgba(34,153,113,0.4)'; e.target.style.color = 'var(--primary)' }}
+                onMouseLeave={e => { e.target.style.borderColor = 'var(--surface-border)'; e.target.style.color = 'var(--text-dim)' }}
+              >✦ Chat</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && !projects.length && (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)', fontSize: '0.88rem' }}>

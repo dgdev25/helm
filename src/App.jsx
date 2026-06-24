@@ -40,6 +40,7 @@ export default function App() {
         <Route path="/" element={<Layout><Dashboard /></Layout>} />
         <Route path="/projects/:slug" element={<Layout><ProjectDetail /></Layout>} />
         <Route path="/projects/:slug/crates" element={<Layout><ProjectDetail initialTab="Crates" /></Layout>} />
+        <Route path="/projects/:slug/repos" element={<Layout><ProjectDetail initialTab="Repos" /></Layout>} />
         <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
         <Route path="/crates" element={<Layout><Crates /></Layout>} />
         <Route path="/repos" element={<Layout><Repos /></Layout>} />

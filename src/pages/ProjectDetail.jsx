@@ -8,6 +8,7 @@ import StatusPill from '../components/StatusPill.jsx'
 import TopicChip from '../components/TopicChip.jsx'
 import CommitList from '../components/CommitList.jsx'
 import RelatedCrates from '../components/RelatedCrates.jsx'
+import RelatedRepos from '../components/RelatedRepos.jsx'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController)
 
@@ -301,12 +302,16 @@ export default function ProjectDetail({ initialTab }) {
 
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 4, padding: '0 28px', marginBottom: 24, borderBottom: '1px solid var(--surface-border)' }}>
-        {['Overview', 'Crates'].map(tab => (
+        {['Overview', 'Crates', 'Repos'].map(tab => (
           <button
             key={tab}
             onClick={() => {
               setActiveTab(tab)
-              navigate(tab === 'Crates' ? `/projects/${slug}/crates` : `/projects/${slug}`)
+              navigate(
+                tab === 'Crates' ? `/projects/${slug}/crates`
+                : tab === 'Repos' ? `/projects/${slug}/repos`
+                : `/projects/${slug}`
+              )
             }}
             style={{
               background: 'none',
@@ -330,6 +335,13 @@ export default function ProjectDetail({ initialTab }) {
       {activeTab === 'Crates' && (
         <div style={{ padding: '0 28px' }}>
           <RelatedCrates slug={slug} />
+        </div>
+      )}
+
+      {/* Repos tab */}
+      {activeTab === 'Repos' && (
+        <div style={{ padding: '0 28px' }}>
+          <RelatedRepos slug={slug} />
         </div>
       )}
 

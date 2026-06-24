@@ -22,12 +22,17 @@ export default function Repos() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const params = new URLSearchParams()
-    if (search)     params.set('search', search)
-    if (langFilter) params.set('language', langFilter)
-    const { data } = await fetch(`/api/repos?${params}`).then(r => r.json())
-    setRepos(data || [])
-    setLoading(false)
+    try {
+      const params = new URLSearchParams()
+      if (search)     params.set('search', search)
+      if (langFilter) params.set('language', langFilter)
+      const { data } = await fetch(`/api/repos?${params}`).then(r => r.json())
+      setRepos(data || [])
+    } catch {
+      setRepos([])
+    } finally {
+      setLoading(false)
+    }
   }, [search, langFilter])
 
   useEffect(() => { load() }, [load])

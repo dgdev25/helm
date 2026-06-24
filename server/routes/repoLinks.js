@@ -132,6 +132,7 @@ export default async function repoLinksRoutes(app) {
 
   // Update (pin/unpin, edit reason)
   app.patch('/api/projects/:slug/repos/:linkId', async (req, reply) => {
+    const { slug } = req.params
     const id = parseInt(req.params.linkId, 10)
     if (!Number.isInteger(id)) return reply.code(422).send({ error: 'Invalid link id' })
     const { pinned, reason } = req.body || {}
@@ -139,16 +140,17 @@ export default async function repoLinksRoutes(app) {
     if (pinned  !== undefined) updates.pinned  = pinned
     if (reason  !== undefined) updates.reason  = reason
     if (!Object.keys(updates).length) return reply.code(422).send({ error: 'Nothing to update' })
-    const [link] = await sql`UPDATE project_repo_links SET ${sql(updates)} WHERE id = ${id} RETURNING *`
+    const [link] = await sql`UPDATE project_repo_links SET ${sql(updates)} WHERE id = ${id} AND project_slug = ${slug} RETURNING *`
     if (!link) return reply.code(404).send({ error: 'Link not found' })
     return { data: link }
   })
 
   // Remove link
   app.delete('/api/projects/:slug/repos/:linkId', async (req, reply) => {
+    const { slug } = req.params
     const id = parseInt(req.params.linkId, 10)
     if (!Number.isInteger(id)) return reply.code(422).send({ error: 'Invalid link id' })
-    const [row] = await sql`DELETE FROM project_repo_links WHERE id = ${id} RETURNING id`
+    const [row] = await sql`DELETE FROM project_repo_links WHERE id = ${id} AND project_slug = ${slug} RETURNING id`
     if (!row) return reply.code(404).send({ error: 'Link not found' })
     return { data: { deleted: row.id } }
   })

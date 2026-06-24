@@ -32,7 +32,7 @@ async function parseCargo(tomlPath) {
       return m ? m[1] : null
     }
     const name = get('name')
-    if (!name) return null
+    if (!name || !/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(name)) return null
     return {
       name,
       version: get('version'),
@@ -170,7 +170,7 @@ export default async function cratesRoutes(app) {
     const [project] = await sql`SELECT * FROM projects WHERE slug = ${targetProjectSlug}`
     if (!project?.local_path) return reply.code(422).send({ error: 'Target project has no local path' })
 
-    const dest = join(project.local_path, 'crates', crate.name)
+    const dest = join(project.local_path, 'crates', basename(crate.name))
     await mkdir(dest, { recursive: true })
     await cp(crate.source_path, dest, { recursive: true, filter: (src) => !src.includes('/target/') })
 

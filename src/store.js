@@ -1,6 +1,8 @@
 // src/store.js
 import { create } from 'zustand'
 
+let descriptionsPollInterval = null
+
 const api = async (path, opts = {}) => {
   const headers = opts.body ? { 'Content-Type': 'application/json' } : {}
   const res = await fetch(path, { headers, ...opts })
@@ -67,12 +69,12 @@ export const useStore = create((set, get) => ({
     if (!missing.length) return
     // Fire-and-forget on the server — browser doesn't need to stay open
     await fetch('/api/fill-descriptions', { method: 'POST' }).catch(() => {})
-    // Poll fetchProjects every 12s until no more are missing (max 10 min)
+    clearInterval(descriptionsPollInterval)
     let attempts = 0
-    const poll = setInterval(async () => {
+    descriptionsPollInterval = setInterval(async () => {
       await useStore.getState().fetchProjects(useStore.getState().filters)
       const stillMissing = useStore.getState().projects.filter(p => !p.description).length
-      if (stillMissing === 0 || ++attempts >= 50) clearInterval(poll)
+      if (stillMissing === 0 || ++attempts >= 50) { clearInterval(descriptionsPollInterval); descriptionsPollInterval = null }
     }, 12000)
   },
 

@@ -141,7 +141,7 @@ export default function Settings() {
   const [syncHours, setSyncHours] = useState(6)
   const [darkMode, setDarkMode] = useState(() => (localStorage.getItem('ds-theme') || 'dark') !== 'light')
   const [compactCards, setCompactCards] = useState(() => document.documentElement.dataset.compact === 'true')
-  const [appName, setAppNameLocal] = useState(() => localStorage.getItem('ds-app-name') || 'Starmap')
+  const [appName, setAppNameLocal] = useState(() => localStorage.getItem('ds-app-name') || 'Helm')
 
   const handleDarkMode = (val) => {
     setDarkMode(val)
@@ -227,7 +227,7 @@ export default function Settings() {
                 {input(usernames, setUsernames, { placeholder: 'username1,username2' })}
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Comma-separated. All repos from these accounts will be synced.</span>
               </div>
-              <SaveButton onClick={() => saveSection('github', { githubToken: token, githubUsernames: usernames })} saving={saving.github} saved={saved.github} />
+              <SaveButton onClick={() => saveSection('github', { githubUsernames: usernames })} saving={saving.github} saved={saved.github} />
             </SectionCard>
           )}
 

@@ -82,6 +82,7 @@ export default function ProjectDetail({ initialTab }) {
   const { patchProject, projects, openChat } = useStore()
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
+  const launchPollRef = useRef(null)
 
   const [project, setProject] = useState(() => projects.find(p => p.slug === slug) || null)
   const [loading, setLoading] = useState(!project)
@@ -98,6 +99,8 @@ export default function ProjectDetail({ initialTab }) {
   const [synopsisRunning, setSynopsisRunning] = useState(false)
   const [roadmapDiff, setRoadmapDiff] = useState(null) // {removed, added} after a launch refresh
   const [activeTab, setActiveTab] = useState(initialTab || 'Overview')
+
+  useEffect(() => { return () => clearInterval(launchPollRef.current) }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -183,8 +186,8 @@ export default function ProjectDetail({ initialTab }) {
       // Poll until primer_updated_at changes (session finished + primer re-ran), max 20 min
       const baseline = primerUpdatedAt
       const deadline = Date.now() + 20 * 60 * 1000
-      const poll = setInterval(async () => {
-        if (Date.now() > deadline) { clearInterval(poll); return }
+      launchPollRef.current = setInterval(async () => {
+        if (Date.now() > deadline) { clearInterval(launchPollRef.current); return }
         try {
           const p = await fetchProject(slug)
           if (p.primer_updated_at && p.primer_updated_at !== baseline) {
@@ -197,7 +200,7 @@ export default function ProjectDetail({ initialTab }) {
             const removed = before.filter(l => !after.includes(l))
             const added = after.filter(l => !before.includes(l))
             if (removed.length || added.length) setRoadmapDiff({ removed, added })
-            clearInterval(poll)
+            clearInterval(launchPollRef.current)
           }
         } catch {}
       }, 5000)

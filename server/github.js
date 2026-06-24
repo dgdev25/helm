@@ -27,7 +27,9 @@ export function repoToProject(repo) {
     stars: repo.stargazers_count,
     open_issues: repo.open_issues_count,
     is_private: repo.private,
-    last_commit_at: repo.pushed_at
+    last_commit_at: repo.pushed_at,
+    last_commit_msg: null,
+    last_commit_author: null,
   }
 }
 

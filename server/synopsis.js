@@ -1,6 +1,6 @@
 import { execFile } from 'child_process'
 import { promisify } from 'util'
-import { readFile } from 'fs/promises'
+import { readFile, access } from 'fs/promises'
 import { join } from 'path'
 
 const execFileAsync = promisify(execFile)
@@ -22,7 +22,11 @@ async function readLocalContent(localPath) {
 export async function generateDescription(project) {
   let content = null
 
-  if (project.local_path) content = await readLocalContent(project.local_path)
+  if (project.local_path) {
+    // Skip if path no longer exists on disk — avoids burning an AI slot on a ghost repo
+    const exists = await access(project.local_path).then(() => true).catch(() => false)
+    if (exists) content = await readLocalContent(project.local_path)
+  }
 
   if (!content && project.github_full_name && process.env.GITHUB_TOKEN) {
     try {
@@ -33,16 +37,14 @@ export async function generateDescription(project) {
     } catch {}
   }
 
-  // Fallback: synthesise from what we know without needing file content
+  // Fallback: synthesise from whatever metadata we have — always have at least the name
   if (!content) {
     const meta = [
       project.language && `Language: ${project.language}`,
       project.topics?.length && `Topics: ${project.topics.join(', ')}`,
     ].filter(Boolean).join('\n')
-    if (meta) content = meta
+    content = meta || `Project name: ${project.name}`
   }
-
-  if (!content) return null
 
   const prompt = `Project name: ${project.name}\n\n${content}\n\nWrite a single short sentence (max 15 words) for this project's GitHub About field. Describe what it does, not what it is. Return only the sentence.`
 

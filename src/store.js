@@ -2,10 +2,8 @@
 import { create } from 'zustand'
 
 const api = async (path, opts = {}) => {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...opts
-  })
+  const headers = opts.body ? { 'Content-Type': 'application/json' } : {}
+  const res = await fetch(path, { headers, ...opts })
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Request failed')
   return json.data
@@ -54,7 +52,8 @@ export const useStore = create((set, get) => ({
   },
 
   fillMissingDescriptions: async () => {
-    const missing = get().projects.filter(p => !p.description)
+    // ponytail: cap at 10 per sync so this doesn't block for 10+ minutes
+    const missing = get().projects.filter(p => !p.description).slice(0, 10)
     for (const p of missing) {
       await fetch(`/api/projects/${p.slug}/description`, { method: 'POST' })
         .then(async r => {

@@ -75,7 +75,7 @@ async function fetchProject(slug) {
   return json.data
 }
 
-export default function ProjectDetail() {
+export default function ProjectDetail({ initialTab }) {
   const { slug } = useParams()
   const navigate = useNavigate()
   const { patchProject, projects } = useStore()
@@ -96,7 +96,7 @@ export default function ProjectDetail() {
   const [synopsis, setSynopsis] = useState(project?.synopsis || null)
   const [synopsisRunning, setSynopsisRunning] = useState(false)
   const [roadmapDiff, setRoadmapDiff] = useState(null) // {removed, added} after a launch refresh
-  const [activeTab, setActiveTab] = useState('Overview')
+  const [activeTab, setActiveTab] = useState(initialTab || 'Overview')
 
   useEffect(() => {
     setLoading(true)
@@ -304,7 +304,10 @@ export default function ProjectDetail() {
         {['Overview', 'Crates'].map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab)
+              navigate(tab === 'Crates' ? `/projects/${slug}/crates` : `/projects/${slug}`)
+            }}
             style={{
               background: 'none',
               border: 'none',

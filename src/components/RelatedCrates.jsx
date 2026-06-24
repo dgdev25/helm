@@ -176,6 +176,11 @@ function CrateLink({ link, onPin, onRemove }) {
           {link.version && <span style={{ fontSize: '0.63rem', color: 'var(--text-dim)' }}>v{link.version}</span>}
           <span style={{ fontSize: '0.63rem', padding: '1px 6px', borderRadius: 9999, background: `${color}18`, border: `1px solid ${color}`, color }}>{link.category}</span>
           {link.source === 'manual' && <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 9999, padding: '1px 6px' }}>manual</span>}
+          {link.score > 0 && link.source !== 'manual' && (
+            <span style={{ fontSize: '0.6rem', color: link.score >= 0.8 ? 'var(--primary)' : link.score >= 0.5 ? '#fbbf24' : 'var(--text-dim)', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 9999, padding: '1px 6px', fontFamily: 'monospace' }}>
+              {Math.round(link.score * 100)}%
+            </span>
+          )}
         </div>
         {link.reason && <p style={{ fontSize: '0.73rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>{link.reason}</p>}
         <code style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: 4, display: 'block' }}>cargo add {link.name}</code>

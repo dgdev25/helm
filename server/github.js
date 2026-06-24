@@ -5,6 +5,15 @@ import 'dotenv/config'
 
 export const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN })
 
+// ponytail: pure slug disambiguator. If `baseSlug` is already taken by a *different* repo
+// (different github_full_name / local_path), append the owner so two distinct projects never
+// silently merge onto one row. `taken` maps slug -> identity key.
+export function disambiguateSlug(baseSlug, identityKey, taken) {
+  if (!taken[baseSlug] || taken[baseSlug] === identityKey) return baseSlug
+  const owner = (identityKey.split('/')[0] || '').toLowerCase().replace(/[^a-z0-9-]/g, '-')
+  return `${baseSlug}-${owner}`.replace(/-+/g, '-').replace(/-+$/, '')
+}
+
 export function repoToProject(repo) {
   return {
     name: repo.name,
@@ -36,6 +45,11 @@ export async function syncOneRepo(fullName) {
   const [owner, repoName] = fullName.split('/')
   const { data: repo } = await octokit.rest.repos.get({ owner, repo: repoName })
   const project = repoToProject(repo)
+
+  // Disambiguate against any existing row holding this slug under a different repo
+  const rows = await sql`SELECT slug, github_full_name FROM projects WHERE slug = ${project.slug}`
+  const taken = Object.fromEntries(rows.map(r => [r.slug, r.github_full_name]))
+  project.slug = disambiguateSlug(project.slug, repo.full_name, taken)
   try {
     const { data: commits } = await octokit.rest.repos.listCommits({ owner, repo: repoName, per_page: 1 })
     if (commits.length) {
@@ -60,13 +74,18 @@ export async function syncGitHub() {
   let updated = 0
 
   // Preload existing commit timestamps to skip unchanged repos (avoids N+1 API calls)
-  const existing = await sql`SELECT slug, last_commit_at FROM projects`
+  const existing = await sql`SELECT slug, last_commit_at, github_full_name FROM projects`
   const knownAt = Object.fromEntries(existing.map(p => [p.slug, p.last_commit_at ? new Date(p.last_commit_at).getTime() : 0]))
+  const slugTaken = Object.fromEntries(existing.map(p => [p.slug, p.github_full_name]))
 
   for (const username of usernames) {
     const repos = await fetchGitHubRepos(username)
     for (const repo of repos) {
       const project = repoToProject(repo)
+
+      // Disambiguate slug collisions with a different repo before insert
+      project.slug = disambiguateSlug(project.slug, repo.full_name, slugTaken)
+      slugTaken[project.slug] = repo.full_name
 
       // Only fetch commit details when pushed_at has advanced since last sync
       const repoSlug = project.slug

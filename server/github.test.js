@@ -23,4 +23,14 @@ describe('github sync', () => {
     assert.equal(project.open_issues, 2)
     assert.deepEqual(project.topics, ['react', 'node'])
   })
+
+  it('disambiguates slug only on real collisions', async () => {
+    const { disambiguateSlug } = await import('./github.js')
+    // free slug -> unchanged
+    assert.equal(disambiguateSlug('foo', 'alice/foo', {}), 'foo')
+    // same repo re-syncing -> unchanged (idempotent)
+    assert.equal(disambiguateSlug('foo', 'alice/foo', { foo: 'alice/foo' }), 'foo')
+    // different repo holding the slug -> owner appended
+    assert.equal(disambiguateSlug('foo', 'bob/foo', { foo: 'alice/foo' }), 'foo-bob')
+  })
 })

@@ -15,7 +15,10 @@ export const useStore = create((set, get) => ({
   projects: [],
   loading: false,
   error: null,
-  filters: { search: '', status: '', language: '' },
+  filters: { search: '', status: '', language: '', topic: '' },
+
+  // bulkPrimer: null | { done, total, current, items: [{name,slug,status}] }
+  bulkPrimer: null,
 
   setFilter: (key, value) => {
     const updated = { ...get().filters, [key]: value }
@@ -50,6 +53,29 @@ export const useStore = create((set, get) => ({
     set(s => ({ projects: s.projects.map(p => p.slug === slug ? updated : p) }))
   },
 
+  runBulkPrimers: async () => {
+    const locals = get().projects.filter(p => p.local_path)
+    if (!locals.length) return
+    const items = locals.map(p => ({ name: p.name, slug: p.slug, status: 'pending' }))
+    set({ bulkPrimer: { done: 0, total: locals.length, current: null, items: [...items] } })
+    for (let i = 0; i < items.length; i++) {
+      set(s => {
+        const next = [...s.bulkPrimer.items]
+        next[i] = { ...next[i], status: 'running' }
+        return { bulkPrimer: { ...s.bulkPrimer, current: items[i].name, items: next } }
+      })
+      const ok = await fetch(`/api/projects/${items[i].slug}/primer`, { method: 'POST' })
+        .then(r => r.ok).catch(() => false)
+      set(s => {
+        const next = [...s.bulkPrimer.items]
+        next[i] = { ...next[i], status: ok ? 'done' : 'error' }
+        return { bulkPrimer: { ...s.bulkPrimer, done: s.bulkPrimer.done + 1, items: next } }
+      })
+    }
+    await get().fetchProjects(get().filters)
+    set({ bulkPrimer: null })
+  },
+
   triggerSync: async () => {
     set({ loading: true, error: null })
     try {
@@ -58,5 +84,7 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ loading: false, error: err.message })
     }
-  }
+    // Run primers on all local projects after sync
+    await useStore.getState().runBulkPrimers()
+  },
 }))

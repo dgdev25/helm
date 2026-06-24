@@ -11,16 +11,7 @@ import { scanLocalDirs } from '../localscanner.js'
 import { generateSynopsis, generateDescription } from '../synopsis.js'
 import { runPrimer } from '../primer.js'
 import { launchCdp } from '../launcher.js'
-
-// ponytail: global in-flight cap so /primer + /synopsis can't fork unbounded `claude` processes.
-// Raises 429 when full; raise AI_SLOTS if you genuinely need more parallelism.
-const AI_SLOTS = 2
-let aiActive = 0
-async function withAISlot(fn) {
-  if (aiActive >= AI_SLOTS) throw Object.assign(new Error('Too many AI requests running — try again shortly'), { statusCode: 429 })
-  aiActive++
-  try { return await fn() } finally { aiActive-- }
-}
+import { withAISlot } from '../lib/aiSlot.js'
 
 export default async function projectRoutes(app) {
   app.get('/api/projects', async (req, reply) => {

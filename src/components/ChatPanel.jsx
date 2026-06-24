@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useStore } from '../store.js'
+import { renderMarkdown } from '../utils/markdown.jsx'
 
 export default function ChatPanel() {
   const chatProject = useStore(s => s.chatProject)
@@ -204,25 +205,29 @@ export default function ChatPanel() {
             </div>
           )}
 
-          {messages.map((msg, i) => (
-            <div key={msg.id || i} style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '88%',
-                background: msg.role === 'user' ? 'var(--primary-glow)' : 'var(--surface)',
-                border: `1px solid ${msg.role === 'user' ? 'rgba(34,153,113,0.3)' : 'var(--surface-border)'}`,
-                borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                padding: '8px 12px',
-                fontSize: '0.78rem',
-                lineHeight: 1.65,
-                color: msg.role === 'user' ? 'var(--primary)' : 'var(--text)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-              }}>
-                {msg.content}
-                {msg.streaming && <span style={{ opacity: 0.5, animation: 'pulse 1s infinite' }}>▋</span>}
+          {messages.map((msg, i) => {
+            const isAssistant = msg.role === 'assistant'
+            const useRich = isAssistant && !msg.streaming
+            return (
+              <div key={msg.id || i} style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: isAssistant ? 'flex-start' : 'flex-end' }}>
+                <div style={{
+                  maxWidth: '88%',
+                  background: isAssistant ? 'var(--surface)' : 'var(--primary-glow)',
+                  border: `1px solid ${isAssistant ? 'var(--surface-border)' : 'rgba(34,153,113,0.3)'}`,
+                  borderRadius: isAssistant ? '12px 12px 12px 2px' : '12px 12px 2px 12px',
+                  padding: '8px 12px',
+                  fontSize: '0.78rem',
+                  lineHeight: 1.65,
+                  color: isAssistant ? 'var(--text)' : 'var(--primary)',
+                  whiteSpace: useRich ? undefined : 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}>
+                  {useRich ? renderMarkdown(msg.content) : msg.content}
+                  {msg.streaming && <span style={{ opacity: 0.5, animation: 'pulse 1s infinite' }}>▋</span>}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
           <div ref={bottomRef} />
         </div>
 

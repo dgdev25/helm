@@ -4,6 +4,7 @@ import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, BarController }
 import { useStore } from '../store.js'
 import { formatDistanceToNow } from '../utils/time.js'
 import { safeHref } from '../utils/safeHref.js'
+import { renderMarkdown } from '../utils/markdown.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import TopicChip from '../components/TopicChip.jsx'
 import CommitList from '../components/CommitList.jsx'
@@ -12,46 +13,6 @@ import RelatedRepos from '../components/RelatedRepos.jsx'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController)
 
-function renderMarkdown(md) {
-  if (!md) return null
-  const text = md.replace(/<!--[\s\S]*?-->/g, '').trim()
-  const lines = text.split('\n')
-  const els = []
-  let i = 0
-  const fmt = s => s
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-  while (i < lines.length) {
-    const line = lines[i]
-    if (line.startsWith('# ')) {
-      els.push(<h1 key={i} className="pm-h1" dangerouslySetInnerHTML={{ __html: fmt(line.slice(2)) }} />)
-    } else if (line.startsWith('## ')) {
-      els.push(<h2 key={i} className="pm-h2" dangerouslySetInnerHTML={{ __html: fmt(line.slice(3)) }} />)
-    } else if (line.startsWith('### ')) {
-      els.push(<h3 key={i} className="pm-h3" dangerouslySetInnerHTML={{ __html: fmt(line.slice(4)) }} />)
-    } else if (/^[-*] /.test(line)) {
-      const items = []
-      while (i < lines.length && /^[-*] /.test(lines[i])) {
-        items.push(<li key={i} dangerouslySetInnerHTML={{ __html: fmt(lines[i].slice(2)) }} />)
-        i++
-      }
-      els.push(<ul key={`ul-${i}`} className="pm-ul">{items}</ul>)
-      continue
-    } else if (/^\d+\. /.test(line)) {
-      const items = []
-      while (i < lines.length && /^\d+\. /.test(lines[i])) {
-        items.push(<li key={i} dangerouslySetInnerHTML={{ __html: fmt(lines[i].replace(/^\d+\. /, '')) }} />)
-        i++
-      }
-      els.push(<ol key={`ol-${i}`} className="pm-ul">{items}</ol>)
-      continue
-    } else if (line.trim()) {
-      els.push(<p key={i} className="pm-p" dangerouslySetInnerHTML={{ __html: fmt(line) }} />)
-    }
-    i++
-  }
-  return els
-}
 
 function extractRoadmap(md) {
   if (!md) return ''

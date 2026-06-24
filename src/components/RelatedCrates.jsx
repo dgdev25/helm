@@ -20,9 +20,14 @@ export default function RelatedCrates({ slug }) {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/projects/${slug}/crates`).then(r => r.json())
-    setLinks(res.data || [])
-    setLoading(false)
+    try {
+      const res = await fetch(`/api/projects/${slug}/crates`).then(r => r.json())
+      setLinks(res.data || [])
+    } catch (e) {
+      setError(e.message || 'Failed to load crates')
+    } finally {
+      setLoading(false)
+    }
   }, [slug])
 
   useEffect(() => { load() }, [load])
@@ -55,8 +60,8 @@ export default function RelatedCrates({ slug }) {
     if (!q.trim()) { setSearchResults([]); return }
     setSearching(true)
     const res = await fetch(`/api/crates?search=${encodeURIComponent(q)}`).then(r => r.json())
-    const existing = new Set(links.map(l => l.crate_id))
-    setSearchResults((res.data || []).filter(c => !existing.has(c.id)).slice(0, 8))
+    const existing = new Set(links.map(l => l.name))
+    setSearchResults((res.data || []).filter(c => !existing.has(c.name)).slice(0, 8))
     setSearching(false)
   }
 
@@ -109,6 +114,7 @@ export default function RelatedCrates({ slug }) {
           placeholder="Search crates to add manually…"
           value={search}
           onChange={e => searchCrates(e.target.value)}
+          onBlur={() => setTimeout(() => setSearchResults([]), 150)}
           style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8, padding: '7px 12px', fontSize: '0.78rem', color: 'var(--text)', outline: 'none', boxSizing: 'border-box' }}
         />
         {searchResults.length > 0 && (

@@ -7,6 +7,7 @@ import { safeHref } from '../utils/safeHref.js'
 import StatusPill from '../components/StatusPill.jsx'
 import TopicChip from '../components/TopicChip.jsx'
 import CommitList from '../components/CommitList.jsx'
+import RelatedCrates from '../components/RelatedCrates.jsx'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController)
 
@@ -51,6 +52,22 @@ function renderMarkdown(md) {
   return els
 }
 
+function extractRoadmap(md) {
+  if (!md) return ''
+  const match = md.match(/## Roadmap[^\n]*\n([\s\S]*?)(?=\n## |$)/)
+  return match ? match[1].replace(/<!--[\s\S]*?-->/g, '').trim() : ''
+}
+
+function extractSessionLog(md) {
+  if (!md) return []
+  const match = md.match(/## Session log[^\n]*\n([\s\S]*?)(?=\n## |$)/)
+  if (!match) return []
+  return match[1].trim().split('\n')
+    .filter(l => l.startsWith('- '))
+    .map(l => l.slice(2).trim())
+    .reverse() // most recent first
+}
+
 async function fetchProject(slug) {
   const res = await fetch(`/api/projects/${slug}`)
   const json = await res.json()
@@ -71,27 +88,33 @@ export default function ProjectDetail() {
   const [statusVal, setStatusVal] = useState(project?.status || 'active')
   const [deleting, setDeleting] = useState(false)
   const [activity, setActivity] = useState(null) // null = loading, [] = no data
+  const [chartWeeks, setChartWeeks] = useState(12)
   const [primer, setPrimer] = useState(project?.primer_state || null)
   const [primerRunning, setPrimerRunning] = useState(false)
   const [primerError, setPrimerError] = useState(null)
   const [primerUpdatedAt, setPrimerUpdatedAt] = useState(project?.primer_updated_at || null)
+  const [synopsis, setSynopsis] = useState(project?.synopsis || null)
+  const [synopsisRunning, setSynopsisRunning] = useState(false)
+  const [roadmapDiff, setRoadmapDiff] = useState(null) // {removed, added} after a launch refresh
+  const [activeTab, setActiveTab] = useState('Overview')
 
   useEffect(() => {
     setLoading(true)
     setError(null)
     setStatusVal('')
     fetchProject(slug)
-      .then(p => { setProject(p); setStatusVal(p.status); if (p.primer_state) setPrimer(p.primer_state); if (p.primer_updated_at) setPrimerUpdatedAt(p.primer_updated_at); setLoading(false) })
+      .then(p => { setProject(p); setStatusVal(p.status); if (p.primer_state) setPrimer(p.primer_state); if (p.primer_updated_at) setPrimerUpdatedAt(p.primer_updated_at); if (p.synopsis) setSynopsis(p.synopsis); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
   }, [slug])
 
   // Fetch real commit activity from git log / GitHub API
   useEffect(() => {
-    fetch(`/api/projects/${slug}/commit-activity`)
+    setActivity(null)
+    fetch(`/api/projects/${slug}/commit-activity?weeks=${chartWeeks}`)
       .then(r => r.json())
       .then(j => setActivity(j.computing ? 'computing' : (j.data || [])))
       .catch(() => setActivity([]))
-  }, [slug])
+  }, [slug, chartWeeks])
 
   useEffect(() => {
     // Always destroy previous instance before branching (canvas may be replaced by empty-state div)
@@ -150,6 +173,8 @@ export default function ProjectDetail() {
 
   const handleLaunch = async () => {
     try {
+      const roadmapBefore = extractRoadmap(primer)
+      setRoadmapDiff(null)
       const res = await fetch(`/api/projects/${slug}/launch`, { method: 'POST' })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Launch failed')
@@ -164,12 +189,31 @@ export default function ProjectDetail() {
           if (p.primer_updated_at && p.primer_updated_at !== baseline) {
             setPrimer(p.primer_state)
             setPrimerUpdatedAt(p.primer_updated_at)
+            // Diff the roadmap sections
+            const roadmapAfter = extractRoadmap(p.primer_state)
+            const before = roadmapBefore.split('\n').filter(Boolean)
+            const after = roadmapAfter.split('\n').filter(Boolean)
+            const removed = before.filter(l => !after.includes(l))
+            const added = after.filter(l => !before.includes(l))
+            if (removed.length || added.length) setRoadmapDiff({ removed, added })
             clearInterval(poll)
           }
         } catch {}
       }, 5000)
     } catch (e) {
       setPrimerError(e.message)
+    }
+  }
+
+  const handleSynopsis = async () => {
+    setSynopsisRunning(true)
+    try {
+      const res = await fetch(`/api/projects/${slug}/synopsis`, { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Synopsis failed')
+      setSynopsis(json.data.synopsis)
+    } finally {
+      setSynopsisRunning(false)
     }
   }
 
@@ -255,19 +299,57 @@ export default function ProjectDetail() {
         )}
       </div>
 
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 4, padding: '0 28px', marginBottom: 24, borderBottom: '1px solid var(--surface-border)' }}>
+        {['Overview', 'Crates'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
+              padding: '10px 16px',
+              fontSize: '0.82rem',
+              fontWeight: activeTab === tab ? 600 : 400,
+              color: activeTab === tab ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              fontFamily: "'Space Grotesk',sans-serif",
+              marginBottom: -1,
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Crates tab */}
+      {activeTab === 'Crates' && (
+        <div style={{ padding: '0 28px' }}>
+          <RelatedCrates slug={slug} />
+        </div>
+      )}
+
       {/* Two-column body */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, padding: '0 28px', alignItems: 'start' }}>
+      {activeTab === 'Overview' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, padding: '0 28px', alignItems: 'start' }}>
         {/* Left */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* Commit activity */}
           <div className="glass" style={{ padding: 20 }}>
-            <h3 style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 16 }}>Commit Activity (12 weeks)</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600 }}>Commit Activity</h3>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[{w:12,label:'12w'},{w:26,label:'6m'},{w:52,label:'1y'}].map(({w,label}) => (
+                  <button key={w} onClick={() => setChartWeeks(w)} style={{ background: chartWeeks===w ? 'var(--primary-glow)' : 'none', border: `1px solid ${chartWeeks===w ? 'var(--primary)' : 'var(--surface-border)'}`, borderRadius: 6, padding: '2px 8px', fontSize: '0.7rem', color: chartWeeks===w ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}>{label}</button>
+                ))}
+              </div>
+            </div>
             {activity === null
               ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>Loading…</div>
               : activity === 'computing'
                 ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>GitHub is computing stats — check back in a moment</div>
                 : activity.every(w => w.count === 0)
-                  ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No commits in the last 12 weeks</div>
+                  ? <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>No commits in the last {chartWeeks === 52 ? '1 year' : chartWeeks === 26 ? '6 months' : '12 weeks'}</div>
                   : <div style={{ height: 160 }}><canvas ref={chartRef} /></div>
             }
           </div>
@@ -312,10 +394,34 @@ export default function ProjectDetail() {
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', padding: '20px 0' }}>Running /primers on {p.local_path}…</div>
               )}
               {primerError && <p style={{ fontSize: '0.72rem', color: 'var(--danger)', marginBottom: 12 }}>{primerError}</p>}
-              {primer && !primerRunning ? (
-                <div style={{ maxHeight: 600, overflowY: 'auto' }} className="pm-body">
-                  {renderMarkdown(primer)}
+              {roadmapDiff && (
+                <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 8, background: 'var(--surface)', border: '1px solid var(--surface-border)', fontSize: '0.75rem' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>Roadmap updated after session</div>
+                  {roadmapDiff.removed.map((l, i) => <div key={`r${i}`} style={{ color: '#f87171', fontFamily: 'monospace' }}>− {l}</div>)}
+                  {roadmapDiff.added.map((l, i) => <div key={`a${i}`} style={{ color: 'var(--primary)', fontFamily: 'monospace' }}>+ {l}</div>)}
+                  <button onClick={() => setRoadmapDiff(null)} style={{ marginTop: 8, background: 'none', border: 'none', fontSize: '0.68rem', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}>Dismiss</button>
                 </div>
+              )}
+              {primer && !primerRunning ? (
+                <>
+                  <div style={{ maxHeight: 600, overflowY: 'auto' }} className="pm-body">
+                    {renderMarkdown(primer)}
+                  </div>
+                  {extractSessionLog(primer).length > 0 && (
+                    <details style={{ marginTop: 16 }}>
+                      <summary style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                        Session log ({extractSessionLog(primer).length})
+                      </summary>
+                      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {extractSessionLog(primer).map((entry, i) => (
+                          <div key={i} style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: 12, borderLeft: '2px solid var(--surface-border)', fontFamily: 'monospace' }}>
+                            {entry}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </>
               ) : !primerRunning && (
                 <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>
                   No primer yet — click "✦ Run /primers" in the sidebar to generate one.
@@ -373,6 +479,20 @@ export default function ProjectDetail() {
             </div>
           )}
 
+          {/* Synopsis */}
+          <div className="glass" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Synopsis</div>
+              <button onClick={handleSynopsis} disabled={synopsisRunning} style={{ background: 'none', border: 'none', fontSize: '0.7rem', color: 'var(--text-dim)', cursor: 'pointer', padding: 0 }}>
+                {synopsisRunning ? '…' : '↻'}
+              </button>
+            </div>
+            {synopsis
+              ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.55, borderLeft: '2px solid var(--primary)', paddingLeft: 10 }}>{synopsis}</p>
+              : <button onClick={handleSynopsis} disabled={synopsisRunning} style={{ background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '5px 12px', fontSize: '0.75rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}>{synopsisRunning ? '✦ Generating…' : '✦ Generate synopsis'}</button>
+            }
+          </div>
+
           {/* Primer */}
           {p.local_path && (
             <div className="glass" style={{ padding: 18 }}>
@@ -406,7 +526,7 @@ export default function ProjectDetail() {
             </button>
           </div>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

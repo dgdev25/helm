@@ -3,10 +3,9 @@ import { readFile, readdir, cp, mkdir } from 'fs/promises'
 import { join, basename } from 'path'
 import sql from '../db.js'
 
-const SCAN_ROOTS = [
-  '/mnt/datadisk/repos/rUvnet',
-  '/mnt/datadisk/repos/rUvnet/crates',
-]
+const SCAN_ROOTS = process.env.CRATE_SCAN_ROOTS
+  ? process.env.CRATE_SCAN_ROOTS.split(',').map(s => s.trim()).filter(Boolean)
+  : ['/mnt/datadisk/repos/rUvnet', '/mnt/datadisk/repos/rUvnet/crates']
 
 // Auto-categorise by crate name/description keywords
 function categorise(name, desc) {

@@ -1,5 +1,5 @@
 // src/components/RelatedCrates.jsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const CAT_COLOR = {
   'Vector DB': '#6ee7b7', 'Neural / ML': '#93c5fd', 'Quantum': '#d8b4fe',
@@ -60,14 +60,21 @@ export default function RelatedCrates({ slug }) {
     setLinks(ls => ls.filter(l => l.id !== link.id))
   }
 
-  const searchCrates = async (q) => {
+  const searchTimerRef = useRef(null)
+  const searchCrates = (q) => {
     setSearch(q)
+    clearTimeout(searchTimerRef.current)
     if (!q.trim()) { setSearchResults([]); return }
-    setSearching(true)
-    const res = await fetch(`/api/crates?search=${encodeURIComponent(q)}`).then(r => r.json())
-    const existing = new Set(links.map(l => l.name))
-    setSearchResults((res.data || []).filter(c => !existing.has(c.name)).slice(0, 8))
-    setSearching(false)
+    searchTimerRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/crates?search=${encodeURIComponent(q)}`).then(r => r.json())
+        const existing = new Set(links.map(l => l.name))
+        setSearchResults((res.data || []).filter(c => !existing.has(c.name)).slice(0, 8))
+      } finally {
+        setSearching(false)
+      }
+    }, 250)
   }
 
   const addManual = async (crate) => {

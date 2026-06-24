@@ -1,5 +1,5 @@
 // src/components/RelatedRepos.jsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const LANG_COLOR = {
   'Rust': '#f97316', 'TypeScript': '#3b82f6', 'JavaScript': '#eab308',
@@ -138,16 +138,21 @@ export default function RelatedRepos({ slug }) {
     setLinks(ls => ls.filter(l => l.id !== link.id))
   }
 
-  const doSearch = async (q) => {
+  const searchTimerRef = useRef(null)
+  const doSearch = (q) => {
+    setSearch(q)
+    clearTimeout(searchTimerRef.current)
     if (!q.trim()) { setSearchResults([]); return }
-    setSearching(true)
-    try {
-      const { data } = await fetch(`/api/repos?search=${encodeURIComponent(q)}`).then(r => r.json())
-      const linked = new Set(links.map(l => l.full_name))
-      setSearchResults((data || []).filter(r => !linked.has(r.full_name)).slice(0, 8))
-    } finally {
-      setSearching(false)
-    }
+    searchTimerRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const { data } = await fetch(`/api/repos?search=${encodeURIComponent(q)}`).then(r => r.json())
+        const linked = new Set(links.map(l => l.full_name))
+        setSearchResults((data || []).filter(r => !linked.has(r.full_name)).slice(0, 8))
+      } finally {
+        setSearching(false)
+      }
+    }, 250)
   }
 
   const addManual = async (repo) => {
@@ -190,7 +195,7 @@ export default function RelatedRepos({ slug }) {
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <input
           value={search}
-          onChange={e => { setSearch(e.target.value); doSearch(e.target.value) }}
+          onChange={e => doSearch(e.target.value)}
           onBlur={() => setTimeout(() => setSearchResults([]), 150)}
           placeholder="Search repos to add manually…"
           style={{ width: '100%', padding: '7px 12px', fontSize: '0.8rem', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8, color: 'var(--text)', boxSizing: 'border-box' }}

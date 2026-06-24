@@ -6,7 +6,7 @@ import sql from '../db.js'
 const execFileAsync = promisify(execFile)
 import { syncGitHub, syncOneRepo, octokit } from '../github.js'
 import { scanLocalDirs } from '../localscanner.js'
-import { generateSynopsis } from '../synopsis.js'
+import { generateSynopsis, generateDescription } from '../synopsis.js'
 import { runPrimer } from '../primer.js'
 import { launchCdp } from '../launcher.js'
 
@@ -76,10 +76,11 @@ export default async function projectRoutes(app) {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
       if (!project) return reply.code(404).send({ error: 'Not found' })
 
-      // Build 12 weekly buckets ending today
-      const weeks = Array.from({ length: 12 }, (_, i) => {
+      // Build weekly buckets ending today; n controlled by ?weeks= (12/26/52)
+      const n = Math.min(52, Math.max(4, parseInt(req.query.weeks) || 12))
+      const weeks = Array.from({ length: n }, (_, i) => {
         const end = new Date()
-        end.setDate(end.getDate() - (11 - i) * 7)
+        end.setDate(end.getDate() - (n - 1 - i) * 7)
         end.setHours(23, 59, 59, 999)
         const start = new Date(end)
         start.setDate(start.getDate() - 6)
@@ -90,7 +91,7 @@ export default async function projectRoutes(app) {
       if (project.local_path) {
         try {
           const { stdout } = await execFileAsync(
-            'git', ['-C', project.local_path, 'log', '--format=%aI', '--since=84 days ago'],
+            'git', ['-C', project.local_path, 'log', '--format=%aI', `--since=${n * 7} days ago`],
             { encoding: 'utf8', timeout: 5000 }
           )
           for (const line of stdout.trim().split('\n').filter(Boolean)) {
@@ -111,12 +112,47 @@ export default async function projectRoutes(app) {
           }
           // GitHub returns 52 weeks oldest-first; take the last 12
           if (Array.isArray(resp.data)) {
-            resp.data.slice(-12).forEach((w, i) => { weeks[i].count = w.total })
+            resp.data.slice(-n).forEach((w, i) => { weeks[i].count = w.total })
           }
         } catch (_) { /* leave counts at 0 */ }
       }
 
       return { data: weeks.map(({ label, count }) => ({ label, count })) }
+    } catch (err) {
+      return reply.code(500).send({ error: err.message })
+    }
+  })
+
+  app.post('/api/projects', async (req, reply) => {
+    try {
+      const { localPath, githubUrl } = req.body || {}
+      if (!localPath && !githubUrl) return reply.code(400).send({ error: 'Provide localPath or githubUrl' })
+
+      let name, slug, github_url = null, github_full_name = null, local_path = null
+
+      if (githubUrl) {
+        // Extract owner/repo from URL
+        const match = githubUrl.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/)
+        if (!match) return reply.code(400).send({ error: 'Invalid GitHub URL' })
+        github_full_name = `${match[1]}/${match[2]}`
+        github_url = githubUrl.replace(/\.git$/, '')
+        name = match[2]
+      } else {
+        local_path = localPath.trim()
+        name = localPath.trim().replace(/\/$/, '').split('/').pop()
+      }
+
+      slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      // Ensure slug uniqueness
+      const [existing] = await sql`SELECT slug FROM projects WHERE slug = ${slug}`
+      if (existing) slug = `${slug}-${Date.now().toString(36)}`
+
+      const [project] = await sql`
+        INSERT INTO projects (name, slug, local_path, github_url, github_full_name)
+        VALUES (${name}, ${slug}, ${local_path}, ${github_url}, ${github_full_name})
+        RETURNING *
+      `
+      return { data: project }
     } catch (err) {
       return reply.code(500).send({ error: err.message })
     }
@@ -163,6 +199,19 @@ export default async function projectRoutes(app) {
       return { data: { launched: true } }
     } catch (err) {
       return reply.code(500).send({ error: err.message })
+    }
+  })
+
+  app.post('/api/projects/:slug/description', async (req, reply) => {
+    try {
+      const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`
+      if (!project) return reply.code(404).send({ error: 'Not found' })
+      const description = await withAISlot(() => generateDescription(project))
+      if (!description) return reply.code(422).send({ error: 'Could not generate description' })
+      await sql`UPDATE projects SET description = ${description}, updated_at = now() WHERE slug = ${project.slug}`
+      return { data: { description } }
+    } catch (err) {
+      return reply.code(err.statusCode || 500).send({ error: err.message })
     }
   })
 

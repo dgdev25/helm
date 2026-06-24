@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store.js'
+import BulkPrimerProgress from './BulkPrimerProgress.jsx'
 
 const NAV = [
   { label: 'All Projects', status: '', icon: '▦' },
@@ -92,6 +93,7 @@ export default function Sidebar() {
 
       {/* Sync footer */}
       <div style={{ padding: 12, borderTop: '1px solid var(--surface-border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <BulkPrimerProgress />
         <button
           onClick={triggerSync}
           disabled={loading}

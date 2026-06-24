@@ -53,6 +53,21 @@ export const useStore = create((set, get) => ({
     set(s => ({ projects: s.projects.map(p => p.slug === slug ? updated : p) }))
   },
 
+  fillMissingDescriptions: async () => {
+    const missing = get().projects.filter(p => !p.description)
+    for (const p of missing) {
+      await fetch(`/api/projects/${p.slug}/description`, { method: 'POST' })
+        .then(async r => {
+          if (!r.ok) return
+          const { data } = await r.json()
+          if (data?.description) {
+            set(s => ({ projects: s.projects.map(x => x.slug === p.slug ? { ...x, description: data.description } : x) }))
+          }
+        })
+        .catch(() => {})
+    }
+  },
+
   runBulkPrimers: async () => {
     const locals = get().projects.filter(p => p.local_path)
     if (!locals.length) return
@@ -84,7 +99,8 @@ export const useStore = create((set, get) => ({
     } catch (err) {
       set({ loading: false, error: err.message })
     }
-    // Run primers on all local projects after sync
+    // Fill missing descriptions, then run primers
+    await useStore.getState().fillMissingDescriptions()
     await useStore.getState().runBulkPrimers()
   },
 }))

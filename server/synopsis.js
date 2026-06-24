@@ -19,6 +19,40 @@ async function readLocalContent(localPath) {
   return null
 }
 
+export async function generateDescription(project) {
+  let content = null
+
+  if (project.local_path) content = await readLocalContent(project.local_path)
+
+  if (!content && project.github_full_name && process.env.GITHUB_TOKEN) {
+    try {
+      const { octokit } = await import('./github.js')
+      const [owner, repo] = project.github_full_name.split('/')
+      const { data } = await octokit.rest.repos.getReadme({ owner, repo })
+      content = Buffer.from(data.content, 'base64').toString('utf8').slice(0, 3000)
+    } catch {}
+  }
+
+  // Fallback: synthesise from what we know without needing file content
+  if (!content) {
+    const meta = [
+      project.language && `Language: ${project.language}`,
+      project.topics?.length && `Topics: ${project.topics.join(', ')}`,
+    ].filter(Boolean).join('\n')
+    if (meta) content = meta
+  }
+
+  if (!content) return null
+
+  const prompt = `Project name: ${project.name}\n\n${content}\n\nWrite a single short sentence (max 15 words) for this project's GitHub About field. Describe what it does, not what it is. Return only the sentence.`
+
+  const { stdout } = await execFileAsync(
+    'claude', ['-p', prompt],
+    { timeout: 30000, encoding: 'utf8' }
+  )
+  return stdout.trim() || null
+}
+
 export async function generateSynopsis(project) {
   let content = null
 

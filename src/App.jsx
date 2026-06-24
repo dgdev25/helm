@@ -8,7 +8,6 @@ import Settings from './pages/Settings.jsx'
 import NotFound from './pages/NotFound.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import { useStore } from './store.js'
-import BulkPrimerModal from './components/BulkPrimerModal.jsx'
 
 // Apply saved preferences before first paint
 const saved = localStorage.getItem('ds-theme')
@@ -23,7 +22,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeToggle />
-      <BulkPrimerModal />
       <Routes>
         <Route path="/" element={<Layout><Dashboard /></Layout>} />
         <Route path="/projects/:slug" element={<Layout><ProjectDetail /></Layout>} />

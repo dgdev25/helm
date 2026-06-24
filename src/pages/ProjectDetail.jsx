@@ -269,7 +269,6 @@ export default function ProjectDetail() {
               {[
                 ['Source', p.github_url ? 'GitHub' : 'Local'],
                 p.open_issues > 0 && ['Issues', p.open_issues],
-                p.open_prs > 0 && ['PRs', p.open_prs],
                 p.stars > 0 && ['Stars', p.stars],
               ].filter(Boolean).map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>

@@ -60,6 +60,30 @@ async function findCrates(root) {
   return found
 }
 
+const CRATES_IO_UA = 'helm-dashboard/1.0 (https://github.com/dgdev25/helm)'
+
+async function fetchCratesIoUser(username) {
+  const res = await fetch(`https://crates.io/api/v1/users/${username}`, { headers: { 'User-Agent': CRATES_IO_UA } })
+  if (!res.ok) return null
+  const { user } = await res.json()
+  return user
+}
+
+async function fetchCratesIoByUser(userId) {
+  const all = []
+  let page = 1
+  while (true) {
+    const res = await fetch(
+      `https://crates.io/api/v1/crates?user_id=${userId}&per_page=100&page=${page}`,
+      { headers: { 'User-Agent': CRATES_IO_UA } }
+    ).then(r => r.json())
+    all.push(...(res.crates || []))
+    if (all.length >= res.meta.total || !res.crates?.length) break
+    page++
+  }
+  return all
+}
+
 export default async function cratesRoutes(app) {
   // List all crates in library
   app.get('/api/crates', async (req) => {
@@ -145,6 +169,60 @@ export default async function cratesRoutes(app) {
         tomlSnippet: `${crate.name} = { path = "./crates/${crate.name}" }`,
       }
     }
+  })
+
+  // Import crates from a crates.io URL (user page, team page, or search)
+  app.post('/api/crates/import-url', async (req, reply) => {
+    const { url } = req.body || {}
+    if (!url) return reply.code(422).send({ error: 'url required' })
+
+    // Parse supported URL patterns
+    let crates = []
+    const userMatch = url.match(/crates\.io\/users\/([^/?#]+)/)
+    const teamMatch = url.match(/crates\.io\/teams\/([^/?#]+)/)
+    const searchMatch = url.match(/crates\.io\/search\?.*q=([^&]+)/)
+
+    if (userMatch) {
+      const user = await fetchCratesIoUser(userMatch[1])
+      if (!user) return reply.code(404).send({ error: `User "${userMatch[1]}" not found on crates.io` })
+      crates = await fetchCratesIoByUser(user.id)
+    } else if (teamMatch) {
+      // Team crates: fetch owners list for team then query by team_id
+      const teamRes = await fetch(`https://crates.io/api/v1/crates?team_id=${encodeURIComponent(teamMatch[1])}&per_page=100`, { headers: { 'User-Agent': CRATES_IO_UA } }).then(r => r.json())
+      crates = teamRes.crates || []
+    } else if (searchMatch) {
+      const q = decodeURIComponent(searchMatch[1])
+      const res = await fetch(`https://crates.io/api/v1/crates?q=${encodeURIComponent(q)}&per_page=100`, { headers: { 'User-Agent': CRATES_IO_UA } }).then(r => r.json())
+      crates = res.crates || []
+    } else {
+      return reply.code(422).send({ error: 'Unsupported URL. Use crates.io/users/<name>, /teams/<name>, or /search?q=<term>' })
+    }
+
+    let imported = 0
+    for (const c of crates) {
+      await sql`
+        INSERT INTO crate_library (name, version, description, category, crates_io_url, docs_url, downloads, updated_at)
+        VALUES (
+          ${c.name}, ${c.max_version || c.newest_version},
+          ${c.description}, ${categorise(c.name, c.description)},
+          ${'https://crates.io/crates/' + c.name},
+          ${c.documentation},
+          ${c.downloads || 0},
+          now()
+        )
+        ON CONFLICT (name) DO UPDATE SET
+          version     = EXCLUDED.version,
+          description = COALESCE(NULLIF(EXCLUDED.description,''), crate_library.description),
+          category    = EXCLUDED.category,
+          crates_io_url = EXCLUDED.crates_io_url,
+          docs_url    = EXCLUDED.docs_url,
+          downloads   = EXCLUDED.downloads,
+          updated_at  = now()
+      `
+      imported++
+    }
+
+    return { data: { imported, total: crates.length } }
   })
 
   // Delete from library (doesn't touch disk)

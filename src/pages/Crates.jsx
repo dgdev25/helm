@@ -29,6 +29,9 @@ export default function Crates() {
   const [copyTarget, setCopyTarget] = useState('')
   const [copyResult, setCopyResult] = useState(null)
   const [editNotes, setEditNotes] = useState(null) // { id, notes }
+  const [importUrl, setImportUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
 
   const localProjects = projects.filter(p => p.local_path)
 
@@ -87,6 +90,25 @@ export default function Crates() {
     else setCopyResult({ error: res.error })
   }
 
+  const importFromUrl = async () => {
+    if (!importUrl.trim()) return
+    setImporting(true)
+    setImportResult(null)
+    const res = await fetch('/api/crates/import-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: importUrl.trim() }),
+    }).then(r => r.json())
+    setImporting(false)
+    if (res.data) {
+      setImportResult({ ok: true, msg: `Imported ${res.data.imported} of ${res.data.total} crates` })
+      setImportUrl('')
+      await load()
+    } else {
+      setImportResult({ ok: false, msg: res.error || 'Import failed' })
+    }
+  }
+
   const categories = [...new Set(crates.map(c => c.category).filter(Boolean))].sort()
 
   return (
@@ -109,6 +131,30 @@ export default function Crates() {
           onChange={e => setSearch(e.target.value)}
           style={{ background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8, padding: '5px 12px', fontSize: '0.78rem', color: 'var(--text)', outline: 'none', width: 200 }}
         />
+      </div>
+
+      {/* Import from URL row */}
+      <div style={{ display: 'flex', gap: 8, padding: '8px 28px', borderBottom: '1px solid var(--surface-border)', background: 'var(--topbar-bg)', backdropFilter: 'blur(16px)', marginTop: -1 }}>
+        <input
+          type="url"
+          placeholder="crates.io/users/<name>  ·  /teams/<name>  ·  /search?q=<term>"
+          value={importUrl}
+          onChange={e => setImportUrl(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && importFromUrl()}
+          style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 8, padding: '5px 12px', fontSize: '0.75rem', color: 'var(--text)', outline: 'none' }}
+        />
+        <button
+          onClick={importFromUrl}
+          disabled={importing || !importUrl.trim()}
+          style={{ background: importing ? 'var(--surface)' : 'var(--gradient-btn)', border: '1px solid rgba(34,153,113,0.2)', borderRadius: 8, padding: '5px 14px', fontSize: '0.78rem', color: importing ? 'var(--text-muted)' : '#fff', cursor: importing || !importUrl.trim() ? 'not-allowed' : 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+        >
+          {importing ? '⟳ Importing…' : '↓ Import'}
+        </button>
+        {importResult && (
+          <span style={{ fontSize: '0.75rem', alignSelf: 'center', color: importResult.ok ? 'var(--primary)' : 'var(--danger)', whiteSpace: 'nowrap' }}>
+            {importResult.ok ? '✓' : '✕'} {importResult.msg}
+          </span>
+        )}
       </div>
 
       {/* Copy result banner */}

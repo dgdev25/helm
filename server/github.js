@@ -72,6 +72,15 @@ export async function syncOneRepo(fullName) {
   return 1
 }
 
+async function inParallel(items, concurrency, fn) {
+  const results = []
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency)
+    results.push(...await Promise.all(batch.map(fn)))
+  }
+  return results
+}
+
 export async function syncGitHub() {
   const usernames = ((await getSetting('github_usernames')) || '').split(',').map(u => u.trim()).filter(Boolean)
   let updated = 0
@@ -83,30 +92,34 @@ export async function syncGitHub() {
 
   for (const username of usernames) {
     const repos = await fetchGitHubRepos(username)
-    for (const repo of repos) {
-      const project = repoToProject(repo)
 
-      // Disambiguate slug collisions with a different repo before insert
+    // Build project objects and tag each with whether it needs a commit fetch
+    const items = repos.map(repo => {
+      const project = repoToProject(repo)
       project.slug = disambiguateSlug(project.slug, repo.full_name, slugTaken)
       slugTaken[project.slug] = repo.full_name
+      const needsCommit = new Date(repo.pushed_at).getTime() > (knownAt[project.slug] || 0)
+      return { repo, project, needsCommit }
+    })
 
-      // Only fetch commit details when pushed_at has advanced since last sync
-      const repoSlug = project.slug
-      const pushedMs = new Date(repo.pushed_at).getTime()
-      if (pushedMs > (knownAt[repoSlug] || 0)) {
-        try {
-          const [owner, repoName] = repo.full_name.split('/')
-          const { data: commits } = await octokit.rest.repos.listCommits({
-            owner, repo: repoName, per_page: 1
-          })
-          if (commits.length) {
-            project.last_commit_msg = commits[0].commit.message.split('\n')[0]
-            project.last_commit_author = commits[0].commit.author?.name || ''
-            project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
-          }
-        } catch (err) { console.warn(`[sync] Failed to fetch commits for ${repo.full_name}: ${err.message}`) }
-      }
+    // Fetch commits for stale repos in parallel batches of 5
+    const stale = items.filter(item => item.needsCommit)
+    await inParallel(stale, 5, async ({ repo, project }) => {
+      try {
+        const [owner, repoName] = repo.full_name.split('/')
+        const { data: commits } = await octokit.rest.repos.listCommits({
+          owner, repo: repoName, per_page: 1
+        })
+        if (commits.length) {
+          project.last_commit_msg = commits[0].commit.message.split('\n')[0]
+          project.last_commit_author = commits[0].commit.author?.name || ''
+          project.last_commit_at = commits[0].commit.author?.date || repo.pushed_at
+        }
+      } catch (err) { console.warn(`[sync] Failed to fetch commits for ${repo.full_name}: ${err.message}`) }
+    })
 
+    // Upsert all projects sequentially (DB writes, manageable volume)
+    for (const { project } of items) {
       await sql`
         INSERT INTO projects ${sql(project, 'name', 'slug', 'description', 'github_url', 'github_full_name', 'topics', 'language', 'stars', 'open_issues', 'is_private', 'last_commit_at', 'last_commit_msg', 'last_commit_author')}
         ON CONFLICT (slug) DO UPDATE SET

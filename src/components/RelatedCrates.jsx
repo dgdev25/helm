@@ -147,58 +147,86 @@ export default function RelatedCrates({ slug }) {
         </div>
       )}
 
-      {/* Pinned crates */}
-      {pinned.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 8 }}>Pinned</div>
-          {pinned.map(l => <CrateLink key={l.id} link={l} onPin={togglePin} onRemove={remove} />)}
-        </div>
-      )}
-
-      {/* AI suggestions */}
-      {suggested.length > 0 && (
-        <div>
-          <div style={{ fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)', marginBottom: 8 }}>AI Suggestions</div>
-          {suggested.map(l => <CrateLink key={l.id} link={l} onPin={togglePin} onRemove={remove} />)}
-        </div>
+      {links.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--surface-border)' }}>
+              <th style={TH}>Crate</th>
+              <th style={TH}>Category</th>
+              <th style={{ ...TH, width: 110 }}>Relevance</th>
+              <th style={{ ...TH, width: 80 }}>Reason</th>
+              <th style={{ ...TH, width: 64 }}></th>
+            </tr>
+          </thead>
+          {pinned.length > 0 && (
+            <tbody>
+              <tr><td colSpan={5} style={{ padding: '6px 0 2px', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)' }}>Pinned</td></tr>
+              {pinned.map(l => <CrateRow key={l.id} link={l} onPin={togglePin} onRemove={remove} />)}
+            </tbody>
+          )}
+          {suggested.length > 0 && (
+            <tbody>
+              <tr><td colSpan={5} style={{ padding: '6px 0 2px', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-dim)' }}>AI Suggestions</td></tr>
+              {suggested.map(l => <CrateRow key={l.id} link={l} onPin={togglePin} onRemove={remove} />)}
+            </tbody>
+          )}
+        </table>
       )}
     </div>
   )
 }
 
-function CrateLink({ link, onPin, onRemove }) {
+const TH = { padding: '6px 10px', textAlign: 'left', fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', whiteSpace: 'nowrap' }
+const TD = { padding: '8px 10px', borderBottom: '1px solid var(--surface-border)', verticalAlign: 'middle' }
+
+function ScoreBar({ score }) {
+  const pct = Math.round(score * 100)
+  const color = score >= 0.8 ? 'var(--primary)' : score >= 0.5 ? '#fbbf24' : 'var(--text-dim)'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--surface-border)', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2 }} />
+      </div>
+      <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', color, minWidth: 30 }}>{pct}%</span>
+    </div>
+  )
+}
+
+function CrateRow({ link, onPin, onRemove }) {
   const color = CAT_COLOR[link.category] || 'var(--text-muted)'
   return (
-    <div className="glass" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', marginBottom: 8 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700 }}>{link.name}</span>
+    <tr>
+      <td style={TD}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{link.name}</span>
           {link.version && <span style={{ fontSize: '0.63rem', color: 'var(--text-dim)' }}>v{link.version}</span>}
-          <span style={{ fontSize: '0.63rem', padding: '1px 6px', borderRadius: 9999, background: `${color}18`, border: `1px solid ${color}`, color }}>{link.category}</span>
           {link.source === 'manual' && <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 9999, padding: '1px 6px' }}>manual</span>}
-          {link.score > 0 && link.source !== 'manual' && (
-            <span style={{ fontSize: '0.6rem', color: link.score >= 0.8 ? 'var(--primary)' : link.score >= 0.5 ? '#fbbf24' : 'var(--text-dim)', background: 'var(--surface)', border: '1px solid var(--surface-border)', borderRadius: 9999, padding: '1px 6px', fontFamily: 'monospace' }}>
-              {Math.round(link.score * 100)}%
-            </span>
-          )}
         </div>
-        {link.reason && <p style={{ fontSize: '0.73rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>{link.reason}</p>}
-        <code style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: 4, display: 'block' }}>cargo add {link.name}</code>
-      </div>
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        <button
-          onClick={() => onPin(link)}
-          title={link.pinned ? 'Unpin' : 'Pin'}
-          style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: 6, padding: '3px 7px', fontSize: '0.72rem', color: link.pinned ? '#fbbf24' : 'var(--text-dim)', cursor: 'pointer' }}
-        >
-          {link.pinned ? '★' : '☆'}
-        </button>
-        <button
-          onClick={() => onRemove(link)}
-          title="Remove"
-          style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: 6, padding: '3px 7px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer' }}
-        >×</button>
-      </div>
-    </div>
+        <code style={{ fontSize: '0.65rem', color: 'var(--primary)', marginTop: 2, display: 'block' }}>cargo add {link.name}</code>
+      </td>
+      <td style={TD}>
+        <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: 9999, background: `${color}18`, border: `1px solid ${color}`, color }}>{link.category}</span>
+      </td>
+      <td style={TD}>
+        {link.score > 0 && link.source !== 'manual'
+          ? <ScoreBar score={link.score} />
+          : <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>—</span>}
+      </td>
+      <td style={{ ...TD, fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: 240 }}>
+        <span title={link.reason} style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {link.reason || '—'}
+        </span>
+      </td>
+      <td style={{ ...TD, whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={() => onPin(link)} title={link.pinned ? 'Unpin' : 'Pin'}
+            style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: 6, padding: '3px 7px', fontSize: '0.72rem', color: link.pinned ? '#fbbf24' : 'var(--text-dim)', cursor: 'pointer' }}>
+            {link.pinned ? '★' : '☆'}
+          </button>
+          <button onClick={() => onRemove(link)} title="Remove"
+            style={{ background: 'none', border: '1px solid var(--surface-border)', borderRadius: 6, padding: '3px 7px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer' }}>×</button>
+        </div>
+      </td>
+    </tr>
   )
 }

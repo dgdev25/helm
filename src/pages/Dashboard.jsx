@@ -119,14 +119,6 @@ export default function Dashboard() {
             {langs.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
         )}
-        {/* Sort toggle */}
-        <button
-          onClick={() => setStaleFirst(s => !s)}
-          style={{ background: staleFirst ? 'var(--primary-glow)' : 'var(--surface)', border: `1px solid ${staleFirst ? 'var(--primary)' : 'var(--surface-border)'}`, borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', color: staleFirst ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer' }}
-          title={staleFirst ? 'Showing stale-first — click for newest-first' : 'Showing newest-first — click for stale-first'}
-        >
-          {staleFirst ? '↑ Stale first' : '↓ Newest first'}
-        </button>
         {/* Search */}
         <input
           type="search"
@@ -152,9 +144,17 @@ export default function Dashboard() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
         {STATUS_CHIPS.map(({ label, value }) => (
           <button key={value} style={chipStyle(filters.status === value)} onClick={() => setFilter('status', value)}>
+
             {label}
           </button>
         ))}
+        <button
+          onClick={() => setStaleFirst(s => !s)}
+          style={chipStyle(staleFirst)}
+          title={staleFirst ? 'Showing stale-first — click for newest-first' : 'Showing newest-first — click for stale-first'}
+        >
+          {staleFirst ? '↑ Stale first' : '↓ Newest first'}
+        </button>
       </div>
 
       {error && (

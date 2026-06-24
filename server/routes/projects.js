@@ -177,6 +177,22 @@ export default async function projectRoutes(app) {
     }
   })
 
+  // Fire-and-forget: fills descriptions for all projects missing one, persists to DB
+  app.post('/api/fill-descriptions', async (req, reply) => {
+    reply.send({ data: { started: true } })
+    ;(async () => {
+      const projects = await sql`SELECT * FROM projects WHERE description IS NULL OR description = ''`
+      for (const p of projects) {
+        try {
+          const description = await withAISlot(() => generateDescription(p))
+          if (description) {
+            await sql`UPDATE projects SET description = ${description}, updated_at = now() WHERE slug = ${p.slug}`
+          }
+        } catch {}
+      }
+    })()
+  })
+
   app.post('/api/projects/:slug/primer', async (req, reply) => {
     try {
       const [project] = await sql`SELECT * FROM projects WHERE slug = ${req.params.slug}`

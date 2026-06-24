@@ -52,19 +52,17 @@ export const useStore = create((set, get) => ({
   },
 
   fillMissingDescriptions: async () => {
-    // ponytail: cap at 10 per sync so this doesn't block for 10+ minutes
-    const missing = get().projects.filter(p => !p.description).slice(0, 10)
-    for (const p of missing) {
-      await fetch(`/api/projects/${p.slug}/description`, { method: 'POST' })
-        .then(async r => {
-          if (!r.ok) return
-          const { data } = await r.json()
-          if (data?.description) {
-            set(s => ({ projects: s.projects.map(x => x.slug === p.slug ? { ...x, description: data.description } : x) }))
-          }
-        })
-        .catch(() => {})
-    }
+    const missing = get().projects.filter(p => !p.description)
+    if (!missing.length) return
+    // Fire-and-forget on the server — browser doesn't need to stay open
+    await fetch('/api/fill-descriptions', { method: 'POST' }).catch(() => {})
+    // Poll fetchProjects every 12s until no more are missing (max 10 min)
+    let attempts = 0
+    const poll = setInterval(async () => {
+      await useStore.getState().fetchProjects(useStore.getState().filters)
+      const stillMissing = useStore.getState().projects.filter(p => !p.description).length
+      if (stillMissing === 0 || ++attempts >= 50) clearInterval(poll)
+    }, 12000)
   },
 
   runBulkPrimers: async () => {

@@ -12,6 +12,7 @@ const NAV = [
 const BOTTOM_NAV = [
   { label: 'Analytics',     to: '/analytics', icon: '↑' },
   { label: 'Crate Library', to: '/crates',    icon: '⬡' },
+  { label: 'Repo Library',  to: '/repos',     icon: '⎇' },
   { label: 'Settings',      to: '/settings',  icon: '⚙' },
 ]
 

@@ -7,6 +7,7 @@ import Analytics from './pages/Analytics.jsx'
 import Settings from './pages/Settings.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Crates from './pages/Crates.jsx'
+import Repos from './pages/Repos.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import { useStore } from './store.js'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/projects/:slug/crates" element={<Layout><ProjectDetail initialTab="Crates" /></Layout>} />
         <Route path="/analytics" element={<Layout><Analytics /></Layout>} />
         <Route path="/crates" element={<Layout><Crates /></Layout>} />
+        <Route path="/repos" element={<Layout><Repos /></Layout>} />
         <Route path="/settings" element={<Layout><Settings /></Layout>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

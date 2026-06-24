@@ -2,42 +2,44 @@ import { spawn } from 'child_process'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
-const QUICK_PROMPT = `You are doing a Quick Prime of this project. Run these commands in one parallel batch using your tools:
+const QUICK_PROMPT = `You are priming this project. Run these commands in one parallel batch:
 
 \`\`\`bash
-cat .primer/STATE.md 2>/dev/null | head -40
+cat .primer/STATE.md 2>/dev/null
 git log --oneline -10
 git branch --show-current && git status -s
 git ls-files | cut -d/ -f1-2 | sort -u
 \`\`\`
 
-Also read: README.md (if it exists) and the package manifest (package.json / Cargo.toml / pyproject.toml — not lockfiles).
+Also read: README.md and the package manifest (package.json / Cargo.toml / pyproject.toml — not lockfiles).
 
-Then write .primer/STATE.md with ONLY these sections:
+Then write .primer/STATE.md with ONLY these sections (use the exact headings):
 
 # <Project Name> — Primer State
+<!-- Maintained by the /primers skill. AUTO blocks are regenerated each run; edit CARRY blocks freely. -->
+
+## Executive Summary
+- **Project:** <one sentence — what this project does>
+- **Last session:** <what the most recent 3-5 commits shipped — concrete, not vague>
+- **What's next:** <the single most important next step>
 
 ## At a glance
-- **Purpose:** <one sentence — what this project does>
-- **Stack:** <primary language + key framework + storage if any>
-- **Dev loop:** <how to run/build, from README or scripts>
-- **Last primed:** <today's date> · HEAD \`<short sha>\` on \`<branch>\`
+- **Stack:** <primary language + key framework + storage>
+- **Dev loop:** <how to run/build — exact commands>
+- **Last primed:** <YYYY-MM-DD> · HEAD \`<short sha>\` on \`<branch>\`
 
 ## Structure
 <4-6 key folders/files with one-line roles — no exhaustive dumps>
 
-## In flight
-<what the last 5 commits + uncommitted changes suggest is being worked on right now — 2-3 sentences>
-
-## Next steps
-1. <most obvious next thing, grounded in the commit trajectory or a TODO>
-2. <second most obvious>
-3. <third>
+## Roadmap — next steps
+1. <step> — <why now>
+2. <step> — <why now>
+3. <step> — <why now>
 
 ## Session log
-- <YYYY-MM-DD> \`<sha>\` — quick prime
+- <YYYY-MM-DD> \`<sha>\` — <what this prime found>
 
-After writing the file, output its full contents.`
+Preserve any existing CARRY or Session log sections verbatim. After writing, output the file contents.`
 
 function runClaude(cwd, prompt) {
   return new Promise((resolve, reject) => {

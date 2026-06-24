@@ -17,9 +17,12 @@ CREATE TABLE IF NOT EXISTS projects (
   is_private  BOOLEAN DEFAULT false,
   synopsis    TEXT,
   primer_state TEXT,
+  primer_updated_at TIMESTAMPTZ,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS primer_updated_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_projects_last_commit_at ON projects (last_commit_at DESC NULLS LAST);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects (status);

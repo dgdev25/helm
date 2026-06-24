@@ -10,6 +10,47 @@ import CommitList from '../components/CommitList.jsx'
 
 Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController)
 
+function renderMarkdown(md) {
+  if (!md) return null
+  const text = md.replace(/<!--[\s\S]*?-->/g, '').trim()
+  const lines = text.split('\n')
+  const els = []
+  let i = 0
+  const fmt = s => s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+  while (i < lines.length) {
+    const line = lines[i]
+    if (line.startsWith('# ')) {
+      els.push(<h1 key={i} className="pm-h1" dangerouslySetInnerHTML={{ __html: fmt(line.slice(2)) }} />)
+    } else if (line.startsWith('## ')) {
+      els.push(<h2 key={i} className="pm-h2" dangerouslySetInnerHTML={{ __html: fmt(line.slice(3)) }} />)
+    } else if (line.startsWith('### ')) {
+      els.push(<h3 key={i} className="pm-h3" dangerouslySetInnerHTML={{ __html: fmt(line.slice(4)) }} />)
+    } else if (/^[-*] /.test(line)) {
+      const items = []
+      while (i < lines.length && /^[-*] /.test(lines[i])) {
+        items.push(<li key={i} dangerouslySetInnerHTML={{ __html: fmt(lines[i].slice(2)) }} />)
+        i++
+      }
+      els.push(<ul key={`ul-${i}`} className="pm-ul">{items}</ul>)
+      continue
+    } else if (/^\d+\. /.test(line)) {
+      const items = []
+      while (i < lines.length && /^\d+\. /.test(lines[i])) {
+        items.push(<li key={i} dangerouslySetInnerHTML={{ __html: fmt(lines[i].replace(/^\d+\. /, '')) }} />)
+        i++
+      }
+      els.push(<ol key={`ol-${i}`} className="pm-ul">{items}</ol>)
+      continue
+    } else if (line.trim()) {
+      els.push(<p key={i} className="pm-p" dangerouslySetInnerHTML={{ __html: fmt(line) }} />)
+    }
+    i++
+  }
+  return els
+}
+
 async function fetchProject(slug) {
   const res = await fetch(`/api/projects/${slug}`)
   const json = await res.json()
@@ -33,13 +74,14 @@ export default function ProjectDetail() {
   const [primer, setPrimer] = useState(project?.primer_state || null)
   const [primerRunning, setPrimerRunning] = useState(false)
   const [primerError, setPrimerError] = useState(null)
+  const [primerUpdatedAt, setPrimerUpdatedAt] = useState(project?.primer_updated_at || null)
 
   useEffect(() => {
     setLoading(true)
     setError(null)
     setStatusVal('')
     fetchProject(slug)
-      .then(p => { setProject(p); setStatusVal(p.status); if (p.primer_state) setPrimer(p.primer_state); setLoading(false) })
+      .then(p => { setProject(p); setStatusVal(p.status); if (p.primer_state) setPrimer(p.primer_state); if (p.primer_updated_at) setPrimerUpdatedAt(p.primer_updated_at); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
   }, [slug])
 
@@ -98,6 +140,7 @@ export default function ProjectDetail() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Primer failed')
       setPrimer(json.data.state)
+      setPrimerUpdatedAt(new Date().toISOString())
     } catch (e) {
       setPrimerError(e.message)
     } finally {
@@ -215,28 +258,31 @@ export default function ProjectDetail() {
             <div className="glass" style={{ padding: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <h3 style={{ fontSize: '0.85rem', fontWeight: 600 }}>✦ Project Primer</h3>
-                {primer && (
-                  <button
-                    onClick={handlePrimer}
-                    disabled={primerRunning}
-                    style={{ background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '3px 10px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}
-                  >
-                    {primerRunning ? 'Running…' : '↻ Re-run'}
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {primerUpdatedAt && (
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                      {new Date(primerUpdatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                  )}
+                  {primer && (
+                    <button
+                      onClick={handlePrimer}
+                      disabled={primerRunning}
+                      style={{ background: 'none', border: '1px dashed var(--surface-border)', borderRadius: 6, padding: '3px 10px', fontSize: '0.72rem', color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'Space Grotesk',sans-serif" }}
+                    >
+                      {primerRunning ? 'Running…' : '↻ Re-run'}
+                    </button>
+                  )}
+                </div>
               </div>
               {primerRunning && (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', padding: '20px 0' }}>Running /primers on {p.local_path}…</div>
               )}
               {primerError && <p style={{ fontSize: '0.72rem', color: 'var(--danger)', marginBottom: 12 }}>{primerError}</p>}
               {primer && !primerRunning ? (
-                <pre style={{
-                  fontSize: '0.75rem', lineHeight: 1.7, color: 'var(--text-muted)',
-                  fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                  margin: 0, maxHeight: 600, overflowY: 'auto',
-                }}>
-                  {primer}
-                </pre>
+                <div style={{ maxHeight: 600, overflowY: 'auto' }} className="pm-body">
+                  {renderMarkdown(primer)}
+                </div>
               ) : !primerRunning && (
                 <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>
                   No primer yet — click "✦ Run /primers" in the sidebar to generate one.

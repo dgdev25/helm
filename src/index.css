@@ -112,6 +112,16 @@ h1,h2,h3,h4,h5 { font-family: 'Space Grotesk', sans-serif; }
   border-radius: var(--radius-sm);
 }
 
+/* Primer markdown */
+.pm-body { font-size: 0.78rem; line-height: 1.65; color: var(--text-muted); }
+.pm-h1 { font-size: 0.9rem; font-weight: 700; color: var(--text); margin: 0 0 12px; }
+.pm-h2 { font-size: 0.8rem; font-weight: 700; color: var(--text); margin: 16px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.pm-h3 { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin: 12px 0 4px; }
+.pm-ul { margin: 0 0 8px 0; padding-left: 18px; }
+.pm-ul li { margin-bottom: 3px; }
+.pm-ul li code, .pm-p code { font-size: 0.72rem; background: var(--surface); border: 1px solid var(--surface-border); border-radius: 3px; padding: 1px 4px; font-family: monospace; }
+.pm-p { margin: 0 0 6px; }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

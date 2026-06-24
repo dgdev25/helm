@@ -1,50 +1,48 @@
 # Deathstar — Primer State
 <!-- Maintained by the /primers skill. AUTO blocks are regenerated each run; edit CARRY blocks freely. -->
 
+## Executive Summary  <!-- AUTO -->
+- **Project:** Dashboard for tracking GitHub repos and local git projects — AI-generated synopses, project primers, and commit history in a single UI
+- **Last session:** Completed a full /audit remediation — security (localhost bind), slug collision guard, settings persistence to DB, schema bootstrap on boot, AI concurrency cap, dead row cleanup, and boot-time local scan (7 commits, `6c20baa`)
+- **What's next:** Write tests for `primer.js` / `synopsis.js` (only uncovered server modules); add an auth layer before any remote deploy
+
 ## At a glance  <!-- AUTO -->
-- **Purpose:** Dashboard for tracking GitHub repos and local git projects, with AI-generated synopses and primers per project
-- **Stack:** Node.js (Fastify 5) + React 19 + PostgreSQL (`postgres`) + Vite 8 + Tailwind v4 + Zustand
-- **Dev loop:** build `npm run build` · test `node --test server/*.test.js` · run `npm run dev` (Fastify :47821, Vite :47621 proxies /api) or `bash start.sh` (prod; uses `node --watch`)
+- **Stack:** Node.js (Fastify 5) + React 19 + PostgreSQL + Vite 8 + Tailwind v4 + Zustand
+- **Dev loop:** `bash start.sh` (Fastify :47821, Vite :47621) · `npm run build` · `node --test server/*.test.js`
 - **Last primed:** 2026-06-24 · HEAD `6c20baa` on `main`
 
 ## Structure  <!-- AUTO -->
-- `server/index.js` — Fastify bootstrap, settings GET/PATCH, schema load on boot, scheduler start
-- `server/settings.js` — key/value settings in the `settings` table (.env as first-run default; token env-only)
-- `server/routes/projects.js` — all project routes (incl. `/primers`, `/synopsis`, with a 2-slot AI concurrency cap)
-- `server/primer.js` — generates project primer via `claude -p` subprocess (clearer missing-binary/timeout errors)
-- `server/synopsis.js` — one-line AI synopsis per project card via `claude -p`
-- `server/sync.js` — scheduler; runs a local scan on boot, full sync on interval
-- `server/github.js` — GitHub sync + `disambiguateSlug()` (collision guard)
-- `server/localscanner.js` — local dir scan
-- `server/db.js`, `server/schema.sql` — Postgres connection + schema (applied idempotently on boot)
-- `src/pages/`, `src/components/`, `src/store.js` (Zustand), `src/utils/` — React SPA
-- `start.sh` — launcher
+- `server/index.js` — Fastify bootstrap, settings load, scheduler start
+- `server/routes/projects.js` — all project routes (primers, synopsis, 2-slot AI cap)
+- `server/primer.js` / `synopsis.js` — AI generation via `claude -p` subprocess
+- `server/sync.js` / `localscanner.js` / `github.js` — scheduler, local scan, GitHub sync
+- `server/db.js`, `schema.sql` — Postgres connection + idempotent schema bootstrap
+- `src/pages/` / `src/components/` / `src/store.js` — React SPA + Zustand
 
 ## In flight  <!-- AUTO -->
-Clean tree at `6c20baa`. A full `/audit` just landed: security (localhost bind), bug fix (slug collisions), two gaps closed (settings now persist to DB; schema bootstraps on boot), and hardening (AI concurrency cap + clearer errors, dead `open_prs` row removed, boot-time local scan). Nothing mid-flight — natural checkpoint.
+Clean tree at `6c20baa`. Natural checkpoint post-audit — nothing mid-flight.
 
 ## Drift / distrust  <!-- AUTO -->
-None found. `server/primer.js:33` still has a line that looks like a TODO but is a placeholder *inside the prompt template string*, not a real code marker.
+None found.
 
 ## Roadmap — next steps  <!-- AUTO -->
-1. Tests for `primer.js` and `synopsis.js` — still the only server modules without a `.test.js` — small effort
-2. Surface primer output more prominently (expandable section or dedicated tab on ProjectDetail) — medium effort
-3. Auth layer if `HOST=0.0.0.0` is ever set — the app is localhost-only by design; remote exposure needs auth first
-4. Synopsis prompt-injection hardening (LOW) — README content is interpolated into the `claude` prompt; impact is confined to escaped text today
-<!-- For the exhaustive prioritized worklist, run /audit. -->
+1. Tests for `primer.js` and `synopsis.js` — only server modules without `.test.js` — small effort, high safety
+2. Auth layer if `HOST=0.0.0.0` is ever set — localhost-only by design; remote exposure needs auth first
+3. Synopsis prompt-injection hardening (LOW) — README content interpolated into the `claude` prompt; confined impact today
 
 ## Locked decisions & invariants  <!-- AUTO -->
-- New server logic = own module + matching `.test.js`, run via Node's built-in test runner
-- AI calls are subprocess-based (`execFile('claude', ['-p', ...])`), not an SDK — depends on local `claude` binary on PATH; capped at 2 concurrent
-- Settings: non-secret values in the `settings` table (DB overrides .env); GitHub token is env-only
-- App binds `127.0.0.1` by default (no auth) — set `HOST=0.0.0.0` + add auth only for intentional remote deploy
-- After backend changes, run `bash start.sh` (auto-restart convention; don't ask the user)
+- New server logic = own module + matching `.test.js` (Node built-in test runner)
+- AI calls via `execFile('claude', ['-p', ...])` subprocess — not an SDK; capped at 2 concurrent
+- Settings: non-secrets in `settings` table; GitHub token is env-only
+- App binds `127.0.0.1` by default — set `HOST=0.0.0.0` + auth only for intentional remote deploy
+- After backend changes, run `bash start.sh` (never ask the user)
 
 ## Open threads & decisions  <!-- CARRY: never auto-clobbered; only [ ]→[x] when a commit resolves it -->
 - [x] Decide whether `.primer/` should be tracked in git or gitignored — tracked as of `f32fb88`
-- [x] Harden the `claude -p` subprocess paths (primer + synopsis) with user-visible errors/retry — done in `61da9bd` (clearer errors + 2-slot cap; no retry yet)
+- [x] Harden the `claude -p` subprocess paths — done in `61da9bd`
 
 ## Session log  <!-- append-only -->
 - 2026-06-23 `c3bcd9c` — quick prime
-- 2026-06-24 `c3bcd9c` — standard prime; no git delta, rebuilt ledger into full template, harvested roadmap
-- 2026-06-24 `6c20baa` — post-audit prime; /audit remediation landed (7 commits), ledger updated, two CARRY threads ticked
+- 2026-06-24 `c3bcd9c` — standard prime; rebuilt ledger into full template
+- 2026-06-24 `6c20baa` — post-audit prime; 7 commits landed, CARRY threads ticked
+- 2026-06-24 `6c20baa` — restructured to Executive Summary format; markdown rendering added to UI

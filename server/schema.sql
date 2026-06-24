@@ -83,3 +83,39 @@ CREATE TABLE IF NOT EXISTS project_crate_links (
 CREATE INDEX IF NOT EXISTS idx_pcl_project ON project_crate_links (project_slug);
 CREATE INDEX IF NOT EXISTS idx_pcl_crate   ON project_crate_links (crate_id);
 CREATE INDEX IF NOT EXISTS idx_pcl_score   ON project_crate_links (project_slug, score DESC);
+
+CREATE TABLE IF NOT EXISTS repo_library (
+  id          SERIAL PRIMARY KEY,
+  full_name   TEXT NOT NULL UNIQUE,
+  owner       TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  language    TEXT,
+  topics      TEXT[] DEFAULT '{}',
+  stars       INTEGER DEFAULT 0,
+  html_url    TEXT NOT NULL,
+  starred     BOOLEAN DEFAULT false,
+  notes       TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_repo_library_owner    ON repo_library (owner);
+CREATE INDEX IF NOT EXISTS idx_repo_library_language ON repo_library (language);
+CREATE INDEX IF NOT EXISTS idx_repo_library_stars    ON repo_library (stars DESC);
+
+CREATE TABLE IF NOT EXISTS project_repo_links (
+  id           SERIAL PRIMARY KEY,
+  project_slug TEXT NOT NULL REFERENCES projects(slug) ON DELETE CASCADE,
+  repo_id      INTEGER NOT NULL REFERENCES repo_library(id) ON DELETE CASCADE,
+  score        REAL DEFAULT 0,
+  reason       TEXT DEFAULT '',
+  source       TEXT DEFAULT 'ai' CHECK (source IN ('ai', 'manual', 'discover')),
+  pinned       BOOLEAN DEFAULT false,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (project_slug, repo_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_prl_project ON project_repo_links (project_slug);
+CREATE INDEX IF NOT EXISTS idx_prl_repo    ON project_repo_links (repo_id);
+CREATE INDEX IF NOT EXISTS idx_prl_score   ON project_repo_links (project_slug, score DESC);

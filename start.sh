@@ -37,9 +37,13 @@ STOP_ONLY=false
 FORCE_REBUILD=false
 for arg in "$@"; do
   case "${arg}" in
-    --prod)    PROD_MODE=true ;;
-    --stop)    STOP_ONLY=true ;;
-    --rebuild) FORCE_REBUILD=true ;;
+    --prod)         PROD_MODE=true ;;
+    --stop)         STOP_ONLY=true ;;
+    --rebuild)      FORCE_REBUILD=true ;;
+    --reset-ports)
+      sed -i 's/^BACKEND_PORT="[0-9]*"/BACKEND_PORT=""/' "${BASH_SOURCE[0]}"
+      sed -i 's/^FRONTEND_PORT="[0-9]*"/FRONTEND_PORT=""/' "${BASH_SOURCE[0]}"
+      ok "Ports reset — next run will assign new ones"; exit 0 ;;
     *) echo "Unknown flag: ${arg}" >&2; exit 1 ;;
   esac
 done
@@ -112,13 +116,23 @@ sleep 0.3
 
 [[ "${STOP_ONLY}" == true ]] && { echo; ok "All services stopped."; exit 0; }
 
-# ── Resolve ports (after stopping stale processes so ports are free) ──────────
-BACKEND_PORT="$(find_free_port 47800 47899)"
-FRONTEND_PORT="$(find_free_port 47600 47699)"
+# ── Ports — assigned once on first run, then hardcoded into this script ───────
+BACKEND_PORT=""   # assigned on first run
+FRONTEND_PORT=""  # assigned on first run
+
+if [[ -z "${BACKEND_PORT}" ]]; then
+  BACKEND_PORT="$(find_free_port 47800 47899)"
+  FRONTEND_PORT="$(find_free_port 47600 47699)"
+  sed -i "s/^BACKEND_PORT=\"\"/BACKEND_PORT=\"${BACKEND_PORT}\"/" "${BASH_SOURCE[0]}"
+  sed -i "s/^FRONTEND_PORT=\"\"/FRONTEND_PORT=\"${FRONTEND_PORT}\"/" "${BASH_SOURCE[0]}"
+  info "Ports assigned and saved (backend=${BACKEND_PORT} frontend=${FRONTEND_PORT})"
+else
+  info "Ports: backend=${BACKEND_PORT}  frontend=${FRONTEND_PORT}"
+fi
+
 export BACKEND_PORT FRONTEND_PORT PORT="${BACKEND_PORT}"
 export BACKEND_URL="http://localhost:${BACKEND_PORT}"
 export FRONTEND_URL="http://localhost:${FRONTEND_PORT}"
-info "Ports: backend=${BACKEND_PORT}  frontend=${FRONTEND_PORT}"
 
 # ── 3. Install / build ────────────────────────────────────────────────────────
 header "3. Installing dependencies"

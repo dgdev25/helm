@@ -16,8 +16,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${SCRIPT_DIR}"
 LOG_DIR="${PROJECT_ROOT}/logs"
 
-# Must be defined before find_free_port and flag parsing use it
-die() { echo "[fail] ${*}" >&2; exit 1; }
+# ── Helpers ───────────────────────────────────────────────────────────────────
+info()   { echo "  ${*}"; }
+ok()     { echo "  [ok] ${*}"; }
+warn()   { echo "  [warn] ${*}"; }
+die()    { echo "[fail] ${*}" >&2; exit 1; }
+header() { echo; echo "── ${*}"; }
 
 # ── Port allocation ───────────────────────────────────────────────────────────
 find_free_port() {
@@ -47,12 +51,6 @@ for arg in "$@"; do
     *) echo "Unknown flag: ${arg}" >&2; exit 1 ;;
   esac
 done
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-info()   { echo "  ${*}"; }
-ok()     { echo "  [ok] ${*}"; }
-warn()   { echo "  [warn] ${*}"; }
-header() { echo; echo "── ${*}"; }
 
 wait_for_http() {
   local url="${1}" label="${2}" log="${3:-}" timeout=30 elapsed=0

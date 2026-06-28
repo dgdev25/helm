@@ -68,6 +68,38 @@ npm_needs_install() {
   [[ "${PROJECT_ROOT}/package.json" -nt "${PROJECT_ROOT}/node_modules/.package-lock.json" ]]
 }
 
+# ── Postgres via Docker ───────────────────────────────────────────────────────
+# Parses creds straight from DATABASE_URL so this stays single-source.
+PG_CONTAINER="helm-pg"
+ensure_postgres() {
+  local url="${DATABASE_URL:-}"
+  [[ "${url}" =~ ^postgres(ql)?://([^:]+):([^@]+)@[^:/]+:([0-9]+)/([^?]+) ]] \
+    || die "DATABASE_URL not in expected postgres://user:pass@host:port/db form"
+  local user="${BASH_REMATCH[2]}" pass="${BASH_REMATCH[3]}" port="${BASH_REMATCH[4]}" db="${BASH_REMATCH[5]}"
+
+  if ss -tln 2>/dev/null | grep -q ":${port} "; then
+    ok "Postgres already listening on :${port}"; return 0
+  fi
+  command -v docker &>/dev/null || die "nothing on :${port} and docker not found — start Postgres manually"
+
+  if docker ps -a --format '{{.Names}}' | grep -qx "${PG_CONTAINER}"; then
+    info "Starting existing ${PG_CONTAINER} container..."
+    docker start "${PG_CONTAINER}" >/dev/null
+  else
+    info "Creating ${PG_CONTAINER} container (postgres:16, db=${db})..."
+    docker run -d --name "${PG_CONTAINER}" -p "${port}:5432" \
+      -e POSTGRES_USER="${user}" -e POSTGRES_PASSWORD="${pass}" -e POSTGRES_DB="${db}" \
+      postgres:16 >/dev/null
+  fi
+
+  local elapsed=0
+  until docker exec "${PG_CONTAINER}" pg_isready -U "${user}" -d "${db}" &>/dev/null; do
+    sleep 0.5; elapsed=$((elapsed + 1))
+    [[ ${elapsed} -ge 60 ]] && die "Postgres in ${PG_CONTAINER} not ready after 30s — check: docker logs ${PG_CONTAINER}"
+  done
+  ok "Postgres ready on :${port} (db=${db}, container=${PG_CONTAINER})"
+}
+
 # ── 1. Dependency checks ──────────────────────────────────────────────────────
 header "1. Checking dependencies"
 
@@ -114,9 +146,13 @@ sleep 0.3
 
 [[ "${STOP_ONLY}" == true ]] && { echo; ok "All services stopped."; exit 0; }
 
+# ── 2b. Database ──────────────────────────────────────────────────────────────
+header "2b. Database"
+ensure_postgres
+
 # ── Ports — assigned once on first run, then hardcoded into this script ───────
-BACKEND_PORT=""   # assigned on first run
-FRONTEND_PORT=""  # assigned on first run
+BACKEND_PORT="47800"   # assigned on first run
+FRONTEND_PORT="47600"  # assigned on first run
 
 if [[ -z "${BACKEND_PORT}" ]]; then
   BACKEND_PORT="$(find_free_port 47800 47899)"

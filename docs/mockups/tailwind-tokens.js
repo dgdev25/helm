@@ -1,9 +1,9 @@
-// Deathstar — Tailwind config extend block
+// Helm — Tailwind config extend block
 // Paste into tailwind.config.js under theme.extend to add all design tokens as Tailwind utilities.
 // Usage: bg-ds-primary, text-ds-muted, shadow-ds-glass, etc.
 
 /** @type {import('tailwindcss').Config['theme']['extend']} */
-export const deathstarTokens = {
+export const helmTokens = {
   colors: {
     ds: {
       primary:        '#229971',
@@ -77,12 +77,12 @@ export const deathstarTokens = {
 
 // ── Full config example ──────────────────────────────────────────────────────
 //
-// import { deathstarTokens } from './docs/mockups/tailwind-tokens.js'
+// import { helmTokens } from './docs/mockups/tailwind-tokens.js'
 //
 // export default {
 //   content: ['./index.html', './src/**/*.{js,jsx}'],
 //   theme: {
-//     extend: deathstarTokens,
+//     extend: helmTokens,
 //   },
 //   plugins: [],
 // }

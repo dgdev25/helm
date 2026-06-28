@@ -43,7 +43,7 @@
 
 ```json
 {
-  "name": "deathstar",
+  "name": "helm",
   "version": "0.1.0",
   "type": "module",
   "scripts": {
@@ -94,7 +94,7 @@ export default sql
 - [ ] **Step 4: Create .env.example**
 
 ```
-DATABASE_URL=postgres://user:password@localhost:5432/deathstar
+DATABASE_URL=postgres://user:password@localhost:5432/helm
 GITHUB_TOKEN=ghp_your_token_here
 GITHUB_USERNAMES=yourusername,anotherorg
 LOCAL_SCAN_DIRS=/home/user/dev,/home/user/projects
@@ -196,7 +196,7 @@ export default { plugins: { tailwindcss: {}, autoprefixer: {} } }
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deathstar — Project Dashboard</title>
+  <title>Helm — Project Dashboard</title>
 </head>
 <body class="bg-gray-950 text-gray-100">
   <div id="root"></div>
@@ -226,7 +226,7 @@ createRoot(document.getElementById('root')).render(<App />)
 ```jsx
 export default function App() {
   return <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-    <h1 className="text-2xl font-bold text-teal-400">Deathstar</h1>
+    <h1 className="text-2xl font-bold text-teal-400">Helm</h1>
   </div>
 }
 ```
@@ -792,7 +792,7 @@ Expected: all 3 PASS
 
 ```bash
 curl http://localhost:3000/api/projects | jq '.data | length'
-curl http://localhost:3000/api/projects/deathstar | jq '.data.name'
+curl http://localhost:3000/api/projects/helm | jq '.data.name'
 ```
 
 - [ ] **Step 6: Commit**
@@ -891,7 +891,7 @@ export default function Sidebar() {
   return (
     <aside className="w-56 shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col h-screen sticky top-0">
       <div className="px-4 py-5 border-b border-gray-800">
-        <h1 className="text-lg font-bold text-teal-400 tracking-tight">Deathstar</h1>
+        <h1 className="text-lg font-bold text-teal-400 tracking-tight">Helm</h1>
         <p className="text-xs text-gray-500 mt-0.5">Project Dashboard</p>
       </div>
 
@@ -1222,7 +1222,7 @@ Expected: Full dashboard loads from Fastify-served static files (no Vite dev ser
 - [ ] **Step 2: Create README.md**
 
 ```markdown
-# Deathstar — Project Dashboard
+# Helm — Project Dashboard
 
 Centralized dashboard for tracking all your GitHub repos and local git projects.
 

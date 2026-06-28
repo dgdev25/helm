@@ -1,4 +1,4 @@
-# Deathstar UI — Mockup Implementation Plan
+# Helm UI — Mockup Implementation Plan
 
 Convert `docs/mockups/` into the live React app. Backend API is complete (Tasks 1-7 done). This plan covers only the frontend.
 

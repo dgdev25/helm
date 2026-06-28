@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# start.sh — deathstar development launcher
+# start.sh — helm development launcher
 #
 #   API server (Fastify, Node.js)   → dynamic port (47800–47899)
 #   Frontend dev server (Vite)      → dynamic port (47600–47699)
@@ -165,7 +165,7 @@ if [[ "${PROD_MODE}" == true ]]; then
 
   echo
   echo "┌─────────────────────────────────────────────────┐"
-  echo "│  Deathstar is running (production)              │"
+  echo "│  Helm is running (production)              │"
   echo "├─────────────────────────────────────────────────┤"
   printf "│  %-14s  %-30s │\n" "App + API" "${BACKEND_URL}"
   echo "├─────────────────────────────────────────────────┤"
@@ -196,7 +196,7 @@ ok "Vite dev server running (PID ${VITE_PID}, port ${FRONTEND_PORT})"
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo
 echo "┌─────────────────────────────────────────────────┐"
-echo "│  Deathstar is running                           │"
+echo "│  Helm is running                           │"
 echo "├─────────────────────────────────────────────────┤"
 printf "│  %-14s  %-30s │\n" "Frontend" "${FRONTEND_URL}"
 printf "│  %-14s  %-30s │\n" "API"      "${BACKEND_URL}"

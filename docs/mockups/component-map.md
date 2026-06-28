@@ -1,4 +1,4 @@
-# Component Inventory — Deathstar
+# Component Inventory — Helm
 
 Component extraction from `docs/mockups/`. Maps each visual element to a React component and its source file.
 

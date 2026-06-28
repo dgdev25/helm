@@ -1,4 +1,4 @@
-# Deathstar — Project Dashboard
+# Helm — Project Dashboard
 
 A self-hosted dashboard for tracking GitHub repos and local git projects, with AI-powered summaries, commit analytics, a Rust crate library, a GitHub repo library, and context-aware project chat.
 
@@ -43,8 +43,8 @@ A self-hosted dashboard for tracking GitHub repos and local git projects, with A
 ### 1. Clone and install
 
 ```bash
-git clone <repo-url> deathstar
-cd deathstar
+git clone <repo-url> helm
+cd helm
 npm install
 ```
 
@@ -58,7 +58,7 @@ Edit `.env`:
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | yes | PostgreSQL connection string, e.g. `postgres://user:pass@localhost:5432/deathstar` |
+| `DATABASE_URL` | yes | PostgreSQL connection string, e.g. `postgres://user:pass@localhost:5432/helm` |
 | `GITHUB_TOKEN` | yes | Personal access token (scopes: `repo`, `read:user`) |
 | `GITHUB_USERNAMES` | yes | Comma-separated GitHub usernames/orgs to sync |
 | `LOCAL_SCAN_DIRS` | no | Comma-separated paths to scan for local git repos |
@@ -269,7 +269,7 @@ curl -X POST http://localhost:47821/api/projects/my-project/discover-repos
 ## Project Structure
 
 ```
-deathstar/
+helm/
 ├── server/
 │   ├── index.js            # Fastify bootstrap, route registration, static serving
 │   ├── db.js               # PostgreSQL client (postgres library)

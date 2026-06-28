@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Deathstar Design Tokens (Aston Martin palette) ── */
+/* ── Helm Design Tokens (Aston Martin palette) ── */
 :root {
   --primary:        #229971;
   --primary-dark:   #00665e;

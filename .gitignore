@@ -3,4 +3,5 @@ node_modules/
 dist/
 .env
 logs/
-.primer/launch-prompt.txt
+.primer/
+docs/superpowers/plans/

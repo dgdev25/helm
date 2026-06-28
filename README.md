@@ -5,6 +5,7 @@ A self-hosted dashboard for tracking GitHub repos and local git projects, with A
 ## Features
 
 - **Dashboard** — filterable grid of all projects with status, language, last commit, open issues, and star count
+- **Dark/light theme** — toggle persisted to `localStorage`
 - **AI primers** — generate and store a structured technical primer for any project (via `claude -p`)
 - **AI synopsis** — one-paragraph project summary auto-generated from code and git history
 - **AI chat** — streaming project-scoped chat with full primer context injected automatically
@@ -63,7 +64,7 @@ Edit `.env`:
 | `LOCAL_SCAN_DIRS` | no | Comma-separated paths to scan for local git repos |
 | `CRATE_SCAN_ROOTS` | no | Comma-separated paths to scan for Rust crates |
 | `SYNC_INTERVAL_HOURS` | no | Sync frequency in hours (default: `6`) |
-| `PORT` | no | API server port (default: `47821`) |
+| `PORT` | no | Override the API port (bypasses dynamic allocation — see below) |
 
 ### 3. Initialise the database
 
@@ -77,22 +78,25 @@ psql $DATABASE_URL -f server/schema.sql
 bash start.sh
 ```
 
-| Service | URL |
-|---|---|
-| Frontend (Vite dev server) | http://localhost:47621 |
-| API server | http://localhost:47821 |
+On the **first run**, `start.sh` picks two free ports from the dynamic ranges below, writes them back into itself, and prints the URLs:
 
-Logs land in `logs/server.log` and `logs/vite.log`.
+| Service | Port range | Example URL |
+|---|---|---|
+| API server | 47800–47899 | `http://localhost:47821` |
+| Frontend (Vite dev server) | 47600–47699 | `http://localhost:47621` |
+
+On subsequent runs the same ports are reused (they're patched into `start.sh`). Logs land in `logs/server.log` and `logs/vite.log`.
 
 ## Start Script
 
-`start.sh` handles dependency checks, port cleanup, and service startup.
+`start.sh` handles dependency checks, dynamic port allocation, and service startup.
 
 ```bash
 bash start.sh              # dev mode (default) — Fastify + Vite with hot reload
 bash start.sh --prod       # production build + serve (API only, no Vite)
 bash start.sh --stop       # stop all services
 bash start.sh --rebuild    # force npm install even if node_modules is current
+bash start.sh --reset-ports  # clear saved ports so next run picks new ones
 ```
 
 ## Development
@@ -124,6 +128,8 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 
 ## API Reference
 
+All examples below use port `47821` — replace with your actual assigned port.
+
 ### Projects
 
 | Method | Path | Description |
@@ -136,6 +142,19 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `DELETE` | `/api/projects` | Bulk delete |
 | `GET` | `/api/projects/:slug/commit-activity` | 30-day commit-activity data for charts |
 
+```bash
+# List projects, filter by language
+curl http://localhost:47821/api/projects?language=Rust
+
+# Get a single project
+curl http://localhost:47821/api/projects/my-project
+
+# Update project status
+curl -X PATCH http://localhost:47821/api/projects/my-project \
+  -H 'Content-Type: application/json' \
+  -d '{"status": "paused"}'
+```
+
 ### AI
 
 | Method | Path | Description |
@@ -147,6 +166,16 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `POST` | `/api/projects/:slug/launch` | Open project in terminal via CDP |
 | `POST` | `/api/fill-descriptions` | Bulk fill missing descriptions |
 
+```bash
+# Generate a primer (kicks off a claude -p subprocess)
+curl -X POST http://localhost:47821/api/projects/my-project/primer
+
+# Streaming chat (SSE — reads line-by-line)
+curl -N -X POST http://localhost:47821/api/projects/my-project/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"message": "What does this project do?"}'
+```
+
 ### Sync
 
 | Method | Path | Description |
@@ -155,6 +184,14 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `POST` | `/api/projects/:slug/sync` | Sync a single project |
 | `POST` | `/api/scan/local` | Rescan local directories |
 | `GET` | `/api/sync/log` | Recent sync history |
+
+```bash
+# Trigger a full sync
+curl -X POST http://localhost:47821/api/sync
+
+# Check sync history
+curl http://localhost:47821/api/sync/log
+```
 
 ### Crate Library
 
@@ -167,6 +204,16 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `POST` | `/api/crates/:id/copy` | Duplicate a crate entry |
 | `DELETE` | `/api/crates/:id` | Delete a crate |
 
+```bash
+# List starred crates
+curl http://localhost:47821/api/crates?starred=true
+
+# Import a crate from crates.io
+curl -X POST http://localhost:47821/api/crates/import-url \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://crates.io/crates/tokio"}'
+```
+
 ### Project–Crate Links
 
 | Method | Path | Description |
@@ -177,6 +224,16 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `PATCH` | `/api/projects/:slug/crates/:linkId` | Update link (score, pinned) |
 | `DELETE` | `/api/projects/:slug/crates/:linkId` | Remove link |
 
+```bash
+# Get AI crate suggestions for a project
+curl -X POST http://localhost:47821/api/projects/my-project/suggest-crates
+
+# Pin a crate link
+curl -X PATCH http://localhost:47821/api/projects/my-project/crates/42 \
+  -H 'Content-Type: application/json' \
+  -d '{"pinned": true}'
+```
+
 ### Repo Library
 
 | Method | Path | Description |
@@ -185,6 +242,13 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `POST` | `/api/repos/import-url` | Import a GitHub repo by URL |
 | `PATCH` | `/api/repos/:id` | Update repo (notes, starred) |
 | `DELETE` | `/api/repos/:id` | Delete a repo |
+
+```bash
+# Import a GitHub repo into the library
+curl -X POST http://localhost:47821/api/repos/import-url \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://github.com/tokio-rs/tokio"}'
+```
 
 ### Project–Repo Links
 
@@ -196,6 +260,11 @@ Or use `bash start.sh --prod` which does both steps and waits for the health che
 | `POST` | `/api/projects/:slug/repos` | Link a repo to a project |
 | `PATCH` | `/api/projects/:slug/repos/:linkId` | Update link (score, pinned) |
 | `DELETE` | `/api/projects/:slug/repos/:linkId` | Remove link |
+
+```bash
+# Discover relevant repos via AI + GitHub search
+curl -X POST http://localhost:47821/api/projects/my-project/discover-repos
+```
 
 ## Project Structure
 
@@ -212,6 +281,11 @@ deathstar/
 │   ├── launcher.js         # Terminal launcher via Chrome DevTools Protocol
 │   ├── settings.js         # DB-backed settings read/write
 │   ├── schema.sql          # Full PostgreSQL schema
+│   ├── lib/
+│   │   ├── aiSlot.js       # 2-slot AI concurrency gate (withAISlot)
+│   │   ├── claudeScorer.js # AI scoring for crate relevance
+│   │   ├── repoDiscoverer.js  # AI-driven GitHub repo query generation
+│   │   └── repoScorer.js   # AI scoring for repo relevance
 │   └── routes/
 │       ├── projects.js     # Project + AI + sync endpoints
 │       ├── crates.js       # Crate library CRUD
@@ -229,14 +303,18 @@ deathstar/
 │   │   ├── Analytics.jsx   # Commit-activity charts across projects
 │   │   ├── Crates.jsx      # Crate library browser
 │   │   ├── Repos.jsx       # Repo library browser
-│   │   └── Settings.jsx    # App configuration UI
+│   │   ├── Settings.jsx    # App configuration UI
+│   │   ├── NotFound.jsx    # 404 page
+│   │   └── ServerError.jsx # 5xx error page
 │   ├── components/
 │   │   ├── Layout.jsx      # Shell with sidebar navigation
 │   │   ├── Sidebar.jsx     # Nav, sync button, bulk primer trigger
 │   │   ├── ChatPanel.jsx   # Streaming SSE chat with markdown rendering
 │   │   ├── BulkPrimerBanner.jsx  # Live progress banner with cancel
+│   │   ├── BulkPrimerProgress.jsx
 │   │   ├── RelatedCrates.jsx     # Per-project crate suggestions
 │   │   ├── RelatedRepos.jsx      # Per-project repo suggestions
+│   │   ├── ThemeToggle.jsx # Dark/light theme switch
 │   │   └── ...             # Cards, pills, toggles, stat widgets
 │   └── utils/
 │       └── markdown.jsx    # Shared renderMarkdown (ProjectDetail + ChatPanel)
@@ -244,7 +322,7 @@ deathstar/
 │   └── STATE.md            # Session continuity ledger (updated by /primers)
 ├── logs/                   # Runtime logs (server.log, vite.log) — gitignored
 ├── dist/                   # Production build output — gitignored
-├── start.sh                # Dev/prod launcher script
+├── start.sh                # Dev/prod launcher script (self-patching ports)
 ├── .env.example            # Environment variable template
 ├── vite.config.js
 └── tailwind.config.js
@@ -252,7 +330,7 @@ deathstar/
 
 ## Database Schema
 
-Six tables:
+Seven tables:
 
 | Table | Purpose |
 |---|---|
@@ -276,12 +354,16 @@ These constraints are enforced by convention and must not be bypassed:
 
 ## Troubleshooting
 
+**Find your assigned ports:**
+```bash
+grep "^BACKEND_PORT\|^FRONTEND_PORT" start.sh
+```
+
 **Port already in use:**
 ```bash
 bash start.sh --stop
-# or manually:
-lsof -ti tcp:47821 | xargs kill -9
-lsof -ti tcp:47621 | xargs kill -9
+# or reset and let start.sh pick new ones:
+bash start.sh --reset-ports
 ```
 
 **Server exits immediately:**
@@ -306,6 +388,7 @@ Check the sync log for rate-limit messages:
 ```bash
 curl http://localhost:47821/api/sync/log
 ```
+Replace `47821` with your actual `BACKEND_PORT` from `start.sh`.
 
 ## License
 

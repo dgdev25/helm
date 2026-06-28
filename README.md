@@ -2,6 +2,8 @@
 
 A self-hosted dashboard for tracking GitHub repos and local git projects, with AI-powered summaries, commit analytics, a Rust crate library, a GitHub repo library, and context-aware project chat.
 
+![Helm project dashboard](docs/images/helm.png)
+
 ## Features
 
 - **Dashboard** — filterable grid of all projects with status, language, last commit, open issues, and star count
